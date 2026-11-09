@@ -1,0 +1,133 @@
+:root {
+  color-scheme: light dark;
+  --background: #ffffff;
+  --text: #151515;
+  --muted: #4a4a4a;
+  --border: #333333;
+  --accent: #004f9e;
+  --accent-text: #ffffff;
+  --focus: #b45309;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #121212;
+    --text: #f2f2f2;
+    --muted: #c7c7c7;
+    --border: #bdbdbd;
+    --accent: #8ec5ff;
+    --accent-text: #001a33;
+    --focus: #ffd166;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+main {
+  width: min(48rem, 100%);
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+h2 {
+  margin-top: 2rem;
+  font-size: 1.35rem;
+}
+
+p {
+  max-width: 65ch;
+}
+
+section {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 22rem;
+  margin-bottom: 1rem;
+}
+
+label {
+  font-weight: 700;
+}
+
+input {
+  min-height: 44px;
+  padding: 0.45rem 0.6rem;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+}
+
+button {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(1.08);
+}
+
+input:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+[role="status"] {
+  min-height: 1.5em;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto;
+  }
+  button:hover {
+    filter: none;
+  }
+}
+
+@media (forced-colors: active) {
+  button {
+    border: 2px solid ButtonText;
+  }
+  input:focus-visible,
+  button:focus-visible {
+    outline: 3px solid Highlight;
+  }
+}

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Accessible Date Picker options</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Accessible Date Picker options</h1>
+      <p>
+        Use these settings to change the year range in the date dialog and to clear formats learned
+        on websites.
+      </p>
+
+      <section aria-labelledby="shortcuts-heading">
+        <h2 id="shortcuts-heading">Keyboard shortcut</h2>
+        <p>
+          Chrome manages extension shortcuts. Open the shortcut page, find Accessible Date Picker,
+          and choose a key combination. Alt+Shift+D is the default.
+        </p>
+        <button id="open-shortcuts" type="button">Open Chrome keyboard shortcuts</button>
+        <p id="shortcut-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section aria-labelledby="year-heading">
+        <h2 id="year-heading">Date range</h2>
+        <form id="year-form" novalidate>
+          <div class="field">
+            <label for="earliest-year">Earliest year</label>
+            <input
+              id="earliest-year"
+              name="earliestYear"
+              type="number"
+              min="1900"
+              max="2100"
+              step="1"
+              inputmode="numeric"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="future-years">Number of future years</label>
+            <input
+              id="future-years"
+              name="futureYears"
+              type="number"
+              min="0"
+              max="200"
+              step="1"
+              inputmode="numeric"
+              required
+            />
+          </div>
+          <button type="submit">Save year range</button>
+          <p id="year-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section aria-labelledby="formats-heading">
+        <h2 id="formats-heading">Learned date formats</h2>
+        <p>
+          Accessible Date Picker learns date formats from websites. It never stores a date. Clearing
+          learned formats makes the extension ask less often on repeat visits.
+        </p>
+        <button id="forget-formats" type="button">Forget learned formats</button>
+        <p id="formats-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section aria-labelledby="help-heading">
+        <h2 id="help-heading">How to use</h2>
+        <p>
+          Focus a date field on any website and press Alt+Shift+D, or click the Accessible Date
+          Picker toolbar button. Choose Day, Month and Year, then press Enter or Apply.
+        </p>
+        <p>You can close these options and return to the page.</p>
+      </section>
+
+      <section aria-labelledby="privacy-heading">
+        <h2 id="privacy-heading">Privacy</h2>
+        <p>
+          No network requests. No analytics. No remote code. Entered dates are never stored. Only
+          date format patterns are stored locally.
+        </p>
+      </section>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>
