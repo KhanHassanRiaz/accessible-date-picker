@@ -1,0 +1,9 @@
+node_modules/
+dist-test/
+release/
+test-results/
+playwright-report/
+blob-report/
+.vitest/
+*.log
+*.zip
