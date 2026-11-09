@@ -105,7 +105,7 @@ Prettier skips `dist/`, `release/`, test output, and zip files. Generated bundle
 
 ## 17. Prebuilt output is committed
 
-`dist/` is committed as the loadable production extension so the project can be reviewed without a build step. `npm run build:test` and `npm run test:e2e` overwrite `dist/` with a test build; always run `npm run build` before packaging or publishing the production extension.
+`dist/` is committed as the loadable production extension so the project can be reviewed without a build step. `npm run build:test` and `npm run test:e2e` overwrite `dist/` with a test build. `npm run package` always rebuilds the production extension before writing the zip, so a test manifest cannot be packaged by accident.
 
 ## 18. Plain-language documentation
 

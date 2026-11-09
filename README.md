@@ -13,7 +13,7 @@ The repository includes a prebuilt, loadable extension in `dist/`.
 3. Choose **Load unpacked** and select the `dist` directory.
 4. Optionally pin the Accessible Date Picker button to the toolbar.
 
-To build the zip package instead, run `npm install` and then `npm run package`. The file `accessible-date-picker-1.0.0.zip` is written in the project root. Unzip it and load the unzipped directory as an unpacked extension.
+To build the zip package instead, run `npm install` and then `npm run package`. The package command always builds the production extension first, then writes `accessible-date-picker-1.0.0.zip` in the project root. Unzip it and load the unzipped directory as an unpacked extension.
 
 Chrome 102 or newer is required.
 
