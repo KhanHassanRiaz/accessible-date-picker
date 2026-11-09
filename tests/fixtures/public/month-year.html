@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Month and year picker</title>
+    <link rel="stylesheet" href="/fixture.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Month and year picker</h1>
+      <p>This site never offers a day. The extension must set only the month and announce it.</p>
+      <div class="field">
+        <label for="billing">Billing month</label>
+        <input
+          id="billing"
+          name="billingMonth"
+          data-calendar-field
+          placeholder="MM/YYYY"
+          value="03/2026"
+          autocomplete="off"
+        />
+      </div>
+      <div class="calendar month-picker" data-calendar hidden>
+        <div class="calendar-header">
+          <button type="button" class="calendar-prev" aria-label="Previous year">‹</button>
+          <button type="button" class="calendar-title">2026</button>
+          <button type="button" class="calendar-next" aria-label="Next year">›</button>
+        </div>
+        <div class="month-grid"></div>
+      </div>
+    </main>
+    <script>
+      (function () {
+        var monthNames = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+        var field = document.getElementById("billing");
+        var calendar = document.querySelector(".calendar");
+        var title = calendar.querySelector(".calendar-title");
+        var grid = calendar.querySelector(".month-grid");
+        var year = 2026;
+
+        function pad(value) {
+          return String(value).padStart(2, "0");
+        }
+
+        function render() {
+          title.textContent = String(year);
+          grid.replaceChildren();
+          grid.className = "calendar-grid";
+          monthNames.forEach(function (name, index) {
+            var button = document.createElement("button");
+            button.type = "button";
+            button.className = "day";
+            button.textContent = name;
+            button.addEventListener("click", function () {
+              field.value = pad(index + 1) + "/" + year;
+              field.dispatchEvent(new Event("input", { bubbles: true }));
+              field.dispatchEvent(new Event("change", { bubbles: true }));
+              calendar.hidden = true;
+              field.focus();
+            });
+            grid.append(button);
+          });
+        }
+
+        field.addEventListener("focus", function () {
+          calendar.hidden = false;
+          render();
+        });
+        field.addEventListener("click", function () {
+          calendar.hidden = false;
+          render();
+        });
+        calendar.querySelector(".calendar-prev").addEventListener("click", function () {
+          year -= 1;
+          render();
+        });
+        calendar.querySelector(".calendar-next").addEventListener("click", function () {
+          year += 1;
+          render();
+        });
+        render();
+      })();
+    </script>
+  </body>
+</html>

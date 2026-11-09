@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ambiguous text field</title>
+    <link rel="stylesheet" href="/fixture.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Ambiguous text field</h1>
+      <p>
+        The value 03/04/2025 could be 3 April or 4 March. There is no label or placeholder clue. The
+        extension must refuse to write.
+      </p>
+      <div class="field">
+        <label for="reference">Reference</label>
+        <input id="reference" name="reference" value="03/04/2025" autocomplete="off" />
+      </div>
+    </main>
+  </body>
+</html>

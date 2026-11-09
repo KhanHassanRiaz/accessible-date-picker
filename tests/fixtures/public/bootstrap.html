@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>bootstrap-datepicker</title>
+    <link rel="stylesheet" href="/fixture.css" />
+    <link rel="stylesheet" href="/vendor/bootstrap-datepicker.css" />
+  </head>
+  <body>
+    <main>
+      <h1>bootstrap-datepicker</h1>
+      <div class="field">
+        <label for="booking">Booking date</label>
+        <input
+          id="booking"
+          name="bookingDate"
+          placeholder="DD/MM/YYYY"
+          value="15/03/2026"
+          autocomplete="off"
+        />
+      </div>
+    </main>
+    <script src="/vendor/jquery.js"></script>
+    <script src="/vendor/bootstrap-datepicker.js"></script>
+    <script>
+      $(function () {
+        $("#booking")
+          .datepicker({ format: "dd/mm/yyyy", autoclose: true })
+          .datepicker("setDate", new Date(2026, 2, 15));
+      });
+    </script>
+  </body>
+</html>

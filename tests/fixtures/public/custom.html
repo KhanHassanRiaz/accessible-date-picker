@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Custom site calendar</title>
+    <link rel="stylesheet" href="/fixture.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Custom site calendar</h1>
+      <div class="field">
+        <label for="booking">Booking date</label>
+        <input
+          id="booking"
+          name="bookingDate"
+          data-calendar-field
+          placeholder="DD/MM/YYYY"
+          value="15/03/2026"
+          autocomplete="off"
+        />
+      </div>
+      <div class="calendar" data-calendar hidden>
+        <div class="calendar-header">
+          <button type="button" class="calendar-prev" aria-label="Previous month">‹</button>
+          <button type="button" class="calendar-title">March 2026</button>
+          <button type="button" class="calendar-next" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-grid"></div>
+      </div>
+    </main>
+    <script src="/custom-calendar.js"></script>
+  </body>
+</html>

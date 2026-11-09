@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pikaday, blocked calendar</title>
+    <link rel="stylesheet" href="/fixture.css" />
+    <link rel="stylesheet" href="/vendor/pikaday.css" />
+    <style>
+      .pika-single {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Pikaday, blocked calendar</h1>
+      <p>
+        The Pikaday instance is attached to the field, but its calendar is hidden. The extension
+        must use the library adapter instead of clicking calendar cells.
+      </p>
+      <div class="field">
+        <label for="booking">Booking date</label>
+        <input
+          id="booking"
+          name="bookingDate"
+          placeholder="DD/MM/YYYY"
+          value="15/03/2026"
+          autocomplete="off"
+        />
+      </div>
+    </main>
+    <script src="/vendor/pikaday.js"></script>
+    <script>
+      (function () {
+        var input = document.getElementById("booking");
+        var picker = new Pikaday({
+          field: input,
+          bound: false,
+          format: "DD/MM/YYYY",
+          defaultDate: new Date(2026, 2, 15),
+          setDefaultDate: true,
+          toString: function (date, format) {
+            var pad = function (value) {
+              return String(value).padStart(2, "0");
+            };
+            var tokens = {
+              YYYY: String(date.getFullYear()),
+              MM: pad(date.getMonth() + 1),
+              DD: pad(date.getDate()),
+            };
+            return (format || "DD/MM/YYYY").replace(/YYYY|MM|DD/g, function (token) {
+              return tokens[token] || token;
+            });
+          },
+        });
+        input._pikaday = picker;
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>React calendar</title>
+    <link rel="stylesheet" href="/fixture.css" />
+  </head>
+  <body>
+    <main>
+      <h1>React calendar</h1>
+      <div id="root"></div>
+    </main>
+    <script src="/vendor/react.js"></script>
+    <script src="/vendor/react-dom.js"></script>
+    <script>
+      (function () {
+        var monthNames = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+        var useState = React.useState;
+
+        function pad(value) {
+          return String(value).padStart(2, "0");
+        }
+
+        function App() {
+          var valueState = useState("15/03/2026");
+          var value = valueState[0];
+          var setValue = valueState[1];
+          var openState = useState(false);
+          var open = openState[0];
+          var setOpen = openState[1];
+          var viewState = useState({ year: 2026, month: 2 });
+          var view = viewState[0];
+          var setView = viewState[1];
+
+          function shift(delta) {
+            var month = view.month + delta;
+            var year = view.year;
+            if (month < 0) {
+              month = 11;
+              year -= 1;
+            } else if (month > 11) {
+              month = 0;
+              year += 1;
+            }
+            setView({ year: year, month: month });
+          }
+
+          function choose(day) {
+            setValue(pad(day) + "/" + pad(view.month + 1) + "/" + view.year);
+            setOpen(false);
+          }
+
+          var firstWeekday = new Date(view.year, view.month, 1).getDay();
+          var days = new Date(view.year, view.month + 1, 0).getDate();
+          var cells = [];
+          for (var blank = 0; blank < firstWeekday; blank += 1) {
+            cells.push(React.createElement("span", { key: "blank-" + blank, className: "blank" }));
+          }
+          var dayCells = [];
+          for (var day = 1; day <= days; day += 1) {
+            var current = day;
+            dayCells.push(
+              React.createElement(
+                "button",
+                {
+                  key: "day-" + day,
+                  type: "button",
+                  className: "day",
+                  onClick: function () {
+                    choose(current);
+                  },
+                },
+                String(day),
+              ),
+            );
+          }
+
+          return React.createElement(
+            "div",
+            null,
+            React.createElement("h2", null, "React booking form"),
+            React.createElement(
+              "div",
+              { className: "field" },
+              React.createElement("label", { htmlFor: "booking" }, "Booking date"),
+              React.createElement("input", {
+                id: "booking",
+                name: "bookingDate",
+                placeholder: "DD/MM/YYYY",
+                value: value,
+                autoComplete: "off",
+                onFocus: function () {
+                  setOpen(true);
+                },
+                onClick: function () {
+                  setOpen(true);
+                },
+                onChange: function (event) {
+                  setValue(event.target.value);
+                },
+              }),
+            ),
+            React.createElement(
+              "div",
+              { className: "calendar react-calendar", hidden: !open },
+              React.createElement(
+                "div",
+                { className: "calendar-header" },
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    className: "calendar-prev",
+                    onClick: function () {
+                      shift(-1);
+                    },
+                  },
+                  "‹",
+                ),
+                React.createElement(
+                  "button",
+                  { type: "button", className: "calendar-title" },
+                  monthNames[view.month] + " " + view.year,
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    className: "calendar-next",
+                    onClick: function () {
+                      shift(1);
+                    },
+                  },
+                  "›",
+                ),
+              ),
+              React.createElement(
+                "div",
+                { className: "calendar-grid" },
+                React.createElement(React.Fragment, null, [
+                  React.createElement("span", { key: "wd0", className: "weekday" }, "Sun"),
+                  React.createElement("span", { key: "wd1", className: "weekday" }, "Mon"),
+                  React.createElement("span", { key: "wd2", className: "weekday" }, "Tue"),
+                  React.createElement("span", { key: "wd3", className: "weekday" }, "Wed"),
+                  React.createElement("span", { key: "wd4", className: "weekday" }, "Thu"),
+                  React.createElement("span", { key: "wd5", className: "weekday" }, "Fri"),
+                  React.createElement("span", { key: "wd6", className: "weekday" }, "Sat"),
+                  cells,
+                  dayCells,
+                ]),
+              ),
+            ),
+          );
+        }
+
+        ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+      })();
+    </script>
+  </body>
+</html>

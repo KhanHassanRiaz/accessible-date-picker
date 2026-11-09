@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>flatpickr, blocked calendar</title>
+    <link rel="stylesheet" href="/fixture.css" />
+    <link rel="stylesheet" href="/vendor/flatpickr.css" />
+  </head>
+  <body>
+    <main>
+      <h1>flatpickr, blocked calendar</h1>
+      <p>
+        The flatpickr API works, but clicking the field never opens the calendar. The extension must
+        use the library adapter.
+      </p>
+      <div class="field">
+        <label for="booking">Booking date</label>
+        <input
+          id="booking"
+          name="bookingDate"
+          placeholder="DD/MM/YYYY"
+          value="15/03/2026"
+          autocomplete="off"
+        />
+      </div>
+    </main>
+    <script src="/vendor/flatpickr.js"></script>
+    <script>
+      flatpickr("#booking", {
+        dateFormat: "j/n/Y",
+        defaultDate: new Date(2026, 2, 15),
+        clickOpens: false,
+        disableMobile: true,
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Calendar that does not respond</title>
+    <link rel="stylesheet" href="/fixture.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Calendar that does not respond</h1>
+      <p>The calendar opens but every control is inert. The extension must stop and say so.</p>
+      <div class="field">
+        <label for="booking">Booking date</label>
+        <input
+          id="booking"
+          name="bookingDate"
+          placeholder="DD/MM/YYYY"
+          value="15/03/2026"
+          autocomplete="off"
+        />
+      </div>
+      <div class="calendar" id="stuck-calendar" hidden>
+        <div class="calendar-header">
+          <button type="button" class="calendar-prev" aria-label="Previous month">‹</button>
+          <button type="button" class="calendar-title">March 2026</button>
+          <button type="button" class="calendar-next" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-grid" id="stuck-grid"></div>
+      </div>
+    </main>
+    <script>
+      (function () {
+        var field = document.getElementById("booking");
+        var calendar = document.getElementById("stuck-calendar");
+        var grid = document.getElementById("stuck-grid");
+        for (var day = 1; day <= 30; day += 1) {
+          var button = document.createElement("button");
+          button.type = "button";
+          button.className = "day";
+          button.textContent = String(day);
+          grid.append(button);
+        }
+        field.addEventListener("focus", function () {
+          calendar.hidden = false;
+        });
+        field.addEventListener("click", function () {
+          calendar.hidden = false;
+        });
+      })();
+    </script>
+  </body>
+</html>

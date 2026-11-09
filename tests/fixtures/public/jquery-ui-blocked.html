@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>jQuery UI datepicker, blocked calendar</title>
+    <link rel="stylesheet" href="/fixture.css" />
+    <link rel="stylesheet" href="/vendor/jquery-ui.css" />
+  </head>
+  <body>
+    <main>
+      <h1>jQuery UI datepicker, blocked calendar</h1>
+      <p>
+        The datepicker API works, but the calendar popup refuses to open. The extension must use the
+        library adapter.
+      </p>
+      <div class="field">
+        <label for="booking">Booking date</label>
+        <input
+          id="booking"
+          name="bookingDate"
+          placeholder="DD/MM/YYYY"
+          value="15/03/2026"
+          autocomplete="off"
+        />
+      </div>
+    </main>
+    <script src="/vendor/jquery.js"></script>
+    <script src="/vendor/jquery-ui.js"></script>
+    <script>
+      $(function () {
+        $("#booking").datepicker({
+          dateFormat: "dd/mm/yy",
+          defaultDate: new Date(2026, 2, 15),
+          beforeShow: function () {
+            return false;
+          },
+        });
+      });
+    </script>
+  </body>
+</html>

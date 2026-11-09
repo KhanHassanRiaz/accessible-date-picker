@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Readonly text field</title>
+    <link rel="stylesheet" href="/fixture.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Readonly text field</h1>
+      <p>The field is readonly. The extension may unlock it briefly, write, and restore it.</p>
+      <div class="field">
+        <label for="booking">Booking date</label>
+        <input
+          id="booking"
+          name="bookingDate"
+          placeholder="YYYY-MM-DD"
+          value="2026-03-15"
+          readonly
+        />
+      </div>
+    </main>
+  </body>
+</html>

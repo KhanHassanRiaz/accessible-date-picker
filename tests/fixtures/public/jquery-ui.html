@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>jQuery UI datepicker</title>
+    <link rel="stylesheet" href="/fixture.css" />
+    <link rel="stylesheet" href="/vendor/jquery-ui.css" />
+  </head>
+  <body>
+    <main>
+      <h1>jQuery UI datepicker</h1>
+      <div class="field">
+        <label for="booking">Booking date</label>
+        <input
+          id="booking"
+          name="bookingDate"
+          placeholder="DD/MM/YYYY"
+          value="15/03/2026"
+          autocomplete="off"
+        />
+      </div>
+      <p class="status" id="status" role="status"></p>
+    </main>
+    <script src="/vendor/jquery.js"></script>
+    <script src="/vendor/jquery-ui.js"></script>
+    <script>
+      $(function () {
+        $("#booking").datepicker({
+          dateFormat: "dd/mm/yy",
+          defaultDate: new Date(2026, 2, 15),
+          changeMonth: true,
+          changeYear: true,
+          yearRange: "2020:2030",
+          onSelect: function (value) {
+            document.getElementById("status").textContent = "Chosen " + value;
+          },
+        });
+      });
+    </script>
+  </body>
+</html>

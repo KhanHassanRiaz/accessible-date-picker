@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>flatpickr</title>
+    <link rel="stylesheet" href="/fixture.css" />
+    <link rel="stylesheet" href="/vendor/flatpickr.css" />
+  </head>
+  <body>
+    <main>
+      <h1>flatpickr</h1>
+      <div class="field">
+        <label for="booking">Booking date</label>
+        <input
+          id="booking"
+          name="bookingDate"
+          placeholder="DD/MM/YYYY"
+          value="15/03/2026"
+          autocomplete="off"
+        />
+      </div>
+    </main>
+    <script src="/vendor/flatpickr.js"></script>
+    <script>
+      flatpickr("#booking", {
+        dateFormat: "d/m/Y",
+        defaultDate: "2026-03-15",
+        disableMobile: true,
+      });
+    </script>
+  </body>
+</html>

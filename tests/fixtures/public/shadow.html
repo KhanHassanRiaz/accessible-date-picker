@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Open shadow DOM</title>
+    <link rel="stylesheet" href="/fixture.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Open shadow DOM</h1>
+      <p>The date field is inside an open shadow root.</p>
+      <shadow-date-field></shadow-date-field>
+    </main>
+    <script>
+      customElements.define(
+        "shadow-date-field",
+        class extends HTMLElement {
+          connectedCallback() {
+            var root = this.attachShadow({ mode: "open" });
+            root.innerHTML =
+              "<style>" +
+              "label{display:block;font-weight:700;margin-bottom:.4rem}" +
+              "input{min-height:44px;padding:.45rem .6rem;border:2px solid #333;border-radius:6px;font:inherit}" +
+              "</style>" +
+              '<label for="shadow-date">Shadow date</label>' +
+              '<input id="shadow-date" name="shadowDate" placeholder="YYYY-MM-DD" value="2026-03-15" />';
+          }
+        },
+      );
+    </script>
+  </body>
+</html>

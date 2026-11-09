@@ -1,0 +1,138 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 24px;
+  background: #f4f4f4;
+  color: #111111;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+main {
+  width: min(44rem, 100%);
+}
+
+h1 {
+  font-size: 1.6rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: 24rem;
+  margin: 1.5rem 0;
+}
+
+label {
+  font-weight: 700;
+}
+
+input {
+  min-height: 44px;
+  padding: 0.45rem 0.6rem;
+  border: 2px solid #333333;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111111;
+  font: inherit;
+}
+
+button {
+  min-height: 40px;
+  padding: 0.4rem 0.8rem;
+  border: 2px solid #333333;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111111;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #b45309;
+  outline-offset: 2px;
+}
+
+.calendar {
+  position: absolute;
+  z-index: 20;
+  width: 22rem;
+  margin-top: 0.4rem;
+  padding: 0.75rem;
+  border: 2px solid #111111;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+}
+
+.calendar[hidden] {
+  display: none;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.calendar-title {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font-weight: 700;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-grid .weekday {
+  padding: 0.2rem 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.calendar-grid .day {
+  min-height: 34px;
+  padding: 0.15rem;
+  border: 1px solid #777777;
+  font-size: 0.95rem;
+}
+
+.calendar-grid .day[aria-pressed="true"] {
+  background: #004f9e;
+  color: #ffffff;
+}
+
+.calendar-grid .blank {
+  min-height: 34px;
+}
+
+.status {
+  min-height: 1.5em;
+  margin-top: 1rem;
+  color: #333333;
+}
+
+iframe {
+  width: 100%;
+  min-height: 18rem;
+  border: 2px solid #333333;
+  background: #ffffff;
+}

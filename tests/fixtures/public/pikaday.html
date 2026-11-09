@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pikaday</title>
+    <link rel="stylesheet" href="/fixture.css" />
+    <link rel="stylesheet" href="/vendor/pikaday.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Pikaday</h1>
+      <div class="field">
+        <label for="booking">Booking date</label>
+        <input
+          id="booking"
+          name="bookingDate"
+          placeholder="DD/MM/YYYY"
+          value="15/03/2026"
+          autocomplete="off"
+        />
+      </div>
+    </main>
+    <script src="/vendor/pikaday.js"></script>
+    <script>
+      (function () {
+        var input = document.getElementById("booking");
+        var picker = new Pikaday({
+          field: input,
+          format: "DD/MM/YYYY",
+          defaultDate: new Date(2026, 2, 15),
+          setDefaultDate: true,
+        });
+        input._pikaday = picker;
+      })();
+    </script>
+  </body>
+</html>
