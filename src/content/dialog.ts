@@ -494,7 +494,9 @@ export class DateDialog {
     }
 
     if (event.key === "Enter") {
-      if (target instanceof HTMLSelectElement) return;
+      // Enter applies from the selects as well. Alt+Enter and other modified
+      // presses are left to the browser so select handling is not disturbed.
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
       if (target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement) return;
       event.preventDefault();
       void this.apply();

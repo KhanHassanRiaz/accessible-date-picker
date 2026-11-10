@@ -32,6 +32,20 @@ test.describe("dialog and native inputs", () => {
     await expect(liveRegion(page, "assertive")).toHaveText("Date set: 2026-05-20.");
   });
 
+  test("applies with Enter while focus is on a native select", async ({ page, worker }) => {
+    await page.goto(`${BASE_URL}/native.html`);
+    await openPicker(worker, page, "#appointment");
+
+    await chooseDate(page, { year: 2026, month: 5, day: 20 });
+    await page.locator('select[data-adp-select="day"]').focus();
+    await page.keyboard.press("Enter");
+
+    await expect(dialog(page)).toHaveCount(0);
+    await expect(page.locator("#appointment")).toHaveValue("2026-05-20");
+    await expect(page.locator("#appointment")).toBeFocused();
+    await expect(liveRegion(page, "assertive")).toHaveText("Date set: 2026-05-20.");
+  });
+
   test("sets a native month input and announces the month-only result", async ({
     page,
     worker,

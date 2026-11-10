@@ -1,6 +1,6 @@
 # Progress
 
-Last updated: 2026-11-09
+Last updated: 2026-11-10
 
 ## Status
 
@@ -9,7 +9,7 @@ The extension is feature-complete for the planned scope. A prebuilt production e
 - TypeScript check: pass (`npx tsc --noEmit`).
 - ESLint: pass (`npm run lint`).
 - Unit tests: 103 passing in 8 files (`npm run test:unit`).
-- End-to-end tests: 25 passing (`npm run test:e2e`).
+- End-to-end tests: 26 passing (`npm run test:e2e`).
 - Prettier check: pass for source, tests, scripts, and documentation (`npm run format:check`).
 - Manual NVDA testing: not yet done. See `NVDA_TEST_CHECKLIST.md`.
 
@@ -35,7 +35,7 @@ The end-to-end run uses Playwright headless Chromium, the test build of the exte
 
 - Shadow-root dialog with Day, Month, and Year selects.
 - Apply, Cancel, and Copy diagnostic report controls.
-- Focus trap, Enter, Escape, busy state, and focus return.
+- Focus trap, Enter (including from the selects), Escape, busy state, and focus return.
 - Day list clamping with a spoken notice.
 - Polite and assertive live regions with ten-second cleanup.
 - Dark mode, forced colors, and reduced motion styles.
@@ -59,7 +59,7 @@ The end-to-end run uses Playwright headless Chromium, the test build of the exte
 ### Phase 6: Tests and fixtures
 
 - 103 unit tests across dates, formats, verification, storage, field detection, labels, calendar analysis, and the main-world adapter.
-- 25 end-to-end tests covering native inputs, dialog behavior, the calendar driver, direct write, ambiguity refusal, focus isolation, month and year calendars, React, unresponsive calendars, read-only fields, open shadow roots, same-origin and cross-origin iframes, diagnostics, options, and all four library adapters.
+- 26 end-to-end tests covering native inputs, dialog behavior, Enter to apply from a select, the calendar driver, direct write, ambiguity refusal, focus isolation, month and year calendars, React, unresponsive calendars, read-only fields, open shadow roots, same-origin and cross-origin iframes, diagnostics, options, and all four library adapters.
 - axe accessibility check on the dialog.
 
 ### Phase 7: Documentation and packaging

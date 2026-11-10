@@ -2293,7 +2293,7 @@
         return;
       }
       if (event.key === "Enter") {
-        if (target instanceof HTMLSelectElement) return;
+        if (event.altKey || event.ctrlKey || event.metaKey) return;
         if (target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement) return;
         event.preventDefault();
         void this.apply();

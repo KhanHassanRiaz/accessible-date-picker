@@ -110,3 +110,9 @@ Prettier skips `dist/`, `release/`, test output, and zip files. Generated bundle
 ## 18. Plain-language documentation
 
 Documentation uses real headings, short paragraphs, and direct statements. It avoids ASCII art and emoji. It separates automated coverage from manual screen-reader checks so no unverified accessibility claim is presented as tested.
+
+## 19. Enter applies from the selects
+
+The dialog applies on Enter while focus is on the Day, Month, or Year select, matching the help text and the expectation that Enter activates the dialog. Modified presses such as Alt+Enter are ignored. On Windows Chrome, Enter does not open a closed select list, and key presses inside an open list belong to the native popup, so this does not conflict with choosing a value.
+
+The behavior is covered by an end-to-end test. It is still worth checking with NVDA during the manual pass.
