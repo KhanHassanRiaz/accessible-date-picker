@@ -30,6 +30,13 @@ describe("field verification", () => {
     });
   });
 
+  it("accepts equal day and month numbers without a format", () => {
+    const result = verifyFieldValue("2/2/2026", { year: 2026, month: 2, day: 2 }, "day");
+    expect(result.ok).toBe(true);
+    expect(result.ambiguous).toBe(false);
+    expect(result.parsed).toMatchObject({ year: 2026, month: 2, day: 2 });
+  });
+
   it("uses the known format to resolve an otherwise ambiguous value", () => {
     const result = verifyFieldValue("03/04/2026", target, "day", "mm/dd/yyyy");
     expect(result.ok).toBe(true);

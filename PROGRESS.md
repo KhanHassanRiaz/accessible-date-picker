@@ -8,12 +8,12 @@ The extension is feature-complete for the planned scope. A prebuilt production e
 
 - TypeScript check: pass (`npx tsc --noEmit`).
 - ESLint: pass (`npm run lint`).
-- Unit tests: 103 passing in 8 files (`npm run test:unit`).
-- End-to-end tests: 26 passing (`npm run test:e2e`).
+- Unit tests: 114 passing in 8 files (`npm run test:unit`).
+- End-to-end tests: 28 passing (`npm run test:e2e`).
 - Prettier check: pass for source, tests, scripts, and documentation (`npm run format:check`).
 - Manual NVDA testing: not yet done. See `NVDA_TEST_CHECKLIST.md`.
 
-The end-to-end run uses Playwright headless Chromium, the test build of the extension, and local fixtures. It does not prove how NVDA, JAWS, or VoiceOver will speak the dialog, and it does not prove behavior on real third-party sites.
+The end-to-end run uses Playwright headless Chromium, the test build of the extension, and local fixtures. It does not prove how NVDA, JAWS, or VoiceOver will speak the dialog, and it does not prove behavior on real third-party sites. The ASP.NET AJAX fix is proven against a local CalendarExtender-style fixture, not against the Bank of Punjab form itself.
 
 ## Completed phases
 
@@ -58,8 +58,8 @@ The end-to-end run uses Playwright headless Chromium, the test build of the exte
 
 ### Phase 6: Tests and fixtures
 
-- 103 unit tests across dates, formats, verification, storage, field detection, labels, calendar analysis, and the main-world adapter.
-- 26 end-to-end tests covering native inputs, dialog behavior, Enter to apply from a select, the calendar driver, direct write, ambiguity refusal, focus isolation, month and year calendars, React, unresponsive calendars, read-only fields, open shadow roots, same-origin and cross-origin iframes, diagnostics, options, and all four library adapters.
+- 114 unit tests across dates, formats, verification, storage, field detection, labels, calendar analysis, clipped CalendarExtender views, candidate rejection, and the main-world adapter.
+- 28 end-to-end tests covering native inputs, dialog behavior, Enter to apply from a select, the calendar driver, an ASP.NET AJAX CalendarExtender-style popup with a distant year and a disabled day, direct write, ambiguity refusal, focus isolation, month and year calendars, React, unresponsive calendars, read-only fields, open shadow roots, same-origin and cross-origin iframes, diagnostics, options, and all four library adapters.
 - axe accessibility check on the dialog.
 
 ### Phase 7: Documentation and packaging
@@ -79,9 +79,13 @@ The end-to-end run uses Playwright headless Chromium, the test build of the exte
 - Allowed commas as date separators.
 - Fixed the test build's host permissions so the test hook can start the flow on local fixtures.
 - Added a Prettier ignore file so generated bundles do not fail formatting checks.
+- Fixed the ASP.NET AJAX CalendarExtender path: inactive views that sit below a clipped body are ignored, unhinted forms and oversized layout containers are no longer selected as calendars, the month header opens a year grid for distant years, and closing only touches the calendar the driver opened.
+- Treated equal day and month numbers such as `2/2/2026` as unambiguous, because both day-first and month-first readings give the same date. Other ambiguous numeric values are still refused.
+- Added a local CalendarExtender-style fixture with a readonly field, image trigger, stacked clipped views, out-of-range days, and a distant-year end-to-end test.
 
 ## Remaining work
 
+- Re-test the extension on the real Bank of Punjab form after loading the new production build.
 - Run the manual NVDA checklist on Windows with Chrome.
 - Try the extension on real websites with jQuery UI, bootstrap-datepicker, flatpickr, and Pikaday calendars.
 - Try high-contrast and forced-colors display modes manually.

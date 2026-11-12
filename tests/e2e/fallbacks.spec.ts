@@ -39,6 +39,39 @@ test.describe("calendar driver and direct write", () => {
       .toBe("dd/mm/yyyy");
   });
 
+  test("drives an ASP.NET AJAX CalendarExtender calendar to a distant year", async ({
+    page,
+    worker,
+  }) => {
+    await page.goto(`${BASE_URL}/ajax-calendar.html`);
+    const field = page.locator("#ctl00_ContentPlaceHolder1_Wizard1_txtDOB");
+    await openPicker(worker, page, "#ctl00_ContentPlaceHolder1_Wizard1_txtDOB");
+
+    await chooseDate(page, { year: 2001, month: 2, day: 2 });
+    await applyDialog(page);
+
+    await expect(field).toHaveValue("2/2/2001");
+    await expect(field).toHaveAttribute("readonly", "readonly");
+    await expect(dialog(page)).toHaveCount(0);
+    await expect(field).toBeFocused();
+    await expect(liveRegion(page, "assertive")).toHaveText("Date set: 2/2/2001.");
+  });
+
+  test("refuses a day that the site calendar marks as out of range", async ({ page, worker }) => {
+    await page.goto(`${BASE_URL}/ajax-calendar.html?min=2026-01-10&max=2026-12-20`);
+    const field = page.locator("#ctl00_ContentPlaceHolder1_Wizard1_txtDOB");
+    await openPicker(worker, page, "#ctl00_ContentPlaceHolder1_Wizard1_txtDOB");
+
+    await chooseDate(page, { year: 2026, month: 1, day: 5 });
+    await applyDialog(page);
+
+    await expect(liveRegion(page, "assertive")).toHaveText("This site does not allow that date.", {
+      timeout: 20_000,
+    });
+    await expect(dialog(page)).toBeVisible();
+    await expect(field).toHaveValue("2/2/2026");
+  });
+
   test("writes directly when a visible placeholder proves the format", async ({ page, worker }) => {
     await page.goto(`${BASE_URL}/text-format.html`);
     await openPicker(worker, page, "#booking");

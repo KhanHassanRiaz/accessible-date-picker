@@ -842,7 +842,7 @@ function parseNumericLoose(parts: string[]): LooseParse | null {
     year = numericParts[2]?.value ?? 0;
     dayPart = numericParts[0] ?? { text: "", value: 0 };
     monthPart = numericParts[1] ?? { text: "", value: 0 };
-    if (dayPart.value <= 12 && monthPart.value <= 12) {
+    if (dayPart.value <= 12 && monthPart.value <= 12 && dayPart.value !== monthPart.value) {
       ambiguous = true;
     } else if (dayPart.value <= 12 && monthPart.value > 12) {
       [dayPart, monthPart] = [monthPart, dayPart];
@@ -853,7 +853,8 @@ function parseNumericLoose(parts: string[]): LooseParse | null {
     year = resolveTwoDigitYear(third.value);
     dayPart = numericParts[0] ?? { text: "", value: 0 };
     monthPart = numericParts[1] ?? { text: "", value: 0 };
-    if (dayPart.value <= 12 && monthPart.value <= 12) ambiguous = true;
+    if (dayPart.value <= 12 && monthPart.value <= 12 && dayPart.value !== monthPart.value)
+      ambiguous = true;
     else if (dayPart.value <= 12 && monthPart.value > 12)
       [dayPart, monthPart] = [monthPart, dayPart];
   }

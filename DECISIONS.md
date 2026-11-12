@@ -116,3 +116,37 @@ Documentation uses real headings, short paragraphs, and direct statements. It av
 The dialog applies on Enter while focus is on the Day, Month, or Year select, matching the help text and the expectation that Enter activates the dialog. Modified presses such as Alt+Enter are ignored. On Windows Chrome, Enter does not open a closed select list, and key presses inside an open list belong to the native popup, so this does not conflict with choosing a value.
 
 The behavior is covered by an end-to-end test. It is still worth checking with NVDA during the manual pass.
+
+## 20. ASP.NET AJAX CalendarExtender support
+
+CalendarExtender is handled by the site-calendar driver, not by a library adapter. Its popup keeps the day, month, and year views in the DOM at the same time and slides the inactive views below a body with `overflow: hidden`. A plain visibility check therefore sees several views at once.
+
+The calendar analysis now uses clipping-aware visibility. An element counts as hidden when it lies completely outside the box of a clipping ancestor. Inactive views are ignored, and the active day, month, or year grid is the only one read.
+
+The driver also requires a recognized view kind. It refuses a candidate whose analysis produces no day, month, year, or decade grid, so a container that does not present date cells is not accepted.
+
+Consequences: this pattern is supported without special-casing the library name. Other widgets that stack views in a clipped container are handled by the same rule.
+
+## 21. Candidate discovery rejects broad containers
+
+A page, form, or layout region can contain a nested day table without being a calendar. The candidate search rejects elements that match `form`, `main`, `nav`, `header`, `footer`, `article`, or `section` unless they carry an explicit calendar hint such as a calendar class, `role="grid"`, `role="dialog"`, `data-datepicker`, or `data-calendar`.
+
+Unhinted candidates are also rejected when they contain the target field, hold more than twelve form controls, or contain more than twelve thousand characters of text. Explicitly hinted containers are exempt because a real calendar may deliberately be large.
+
+The diagnostic report prefers the calendar element returned by the driver when it is still connected. A failed run therefore shows the popup that was actually opened instead of the whole surrounding form.
+
+Consequences: the Bank of Punjab report showed the entire `aspnetForm` as the open calendar because the form was selected as a candidate. That selection is now blocked, and the same rule protects future diagnostics.
+
+## 22. Header zoom and closing the right calendar
+
+When the visible year is far from the target, the driver first tries the calendar header. Many calendars switch from a month grid to a year or decade grid, which reaches a distant year in a few page steps instead of one year at a time. One-year navigation remains as a fallback.
+
+Closing is restricted to the calendar element the driver actually opened. Escape is pressed once, then an outside click is used only if that same element is still visible and still recognized. Unrelated calendars on the page are not touched.
+
+Consequences: a date many years away can be reached within the ten-second budget, and a failed attempt cannot close a different widget on the same page.
+
+## 23. Equal day and month numbers are not ambiguous
+
+A numeric value such as `2/2/2026` has two possible readings, day-first and month-first, but both produce the same date. The parser now marks only values whose two readings differ as ambiguous. This keeps refusal for values such as `03/04/2026` while allowing a site that writes the same number twice to verify successfully.
+
+Consequences: the readonly Bank of Punjab field can be verified after the calendar writes `2/2/2001` even when no format clue exists. The success message still shows the exact text the page contains.

@@ -406,7 +406,10 @@ export class ContentFlow {
       ancestor = ancestor.parentElement;
     }
 
-    const openCalendar = findCalendarCandidate(this.field);
+    const driverCalendar = this.driverResult?.calendarElement;
+    const openCalendar = driverCalendar?.isConnected
+      ? driverCalendar
+      : findCalendarCandidate(this.field);
     const calendarHtml = openCalendar
       ? sanitizedOuterHtml(openCalendar, true, 20_480)
       : STRINGS.diagnostics.none;

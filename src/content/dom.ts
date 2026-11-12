@@ -54,6 +54,47 @@ export function isVisible(element: Element): boolean {
   return true;
 }
 
+const CLIPPING_OVERFLOW = /^(?:hidden|clip|auto|scroll)$/;
+
+/**
+ * Detects an element that is fully outside the visible box of a clipping
+ * ancestor. Some widgets, including the ASP.NET AJAX CalendarExtender, keep
+ * every view in the DOM and move the inactive ones below an `overflow: hidden`
+ * body. Those elements still report rectangles, so a plain visibility check
+ * would treat several views as active at once.
+ */
+export function isClippedAway(element: Element): boolean {
+  if (!(element instanceof Element)) return false;
+  const rect = element.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return true;
+  const documentElement = element.ownerDocument.documentElement;
+  const body = element.ownerDocument.body;
+  let node: Node | null = element.parentNode;
+  while (node) {
+    if (node instanceof ShadowRoot) {
+      node = node.host;
+      continue;
+    }
+    if (!(node instanceof Element)) break;
+    if (node !== documentElement && node !== body) {
+      const style = getComputedStyle(node);
+      const clipsX = CLIPPING_OVERFLOW.test(style.overflowX || style.overflow || "");
+      const clipsY = CLIPPING_OVERFLOW.test(style.overflowY || style.overflow || "");
+      if (clipsX || clipsY) {
+        const box = node.getBoundingClientRect();
+        if (clipsX && (rect.right <= box.left || rect.left >= box.right)) return true;
+        if (clipsY && (rect.bottom <= box.top || rect.top >= box.bottom)) return true;
+      }
+    }
+    node = node.parentNode;
+  }
+  return false;
+}
+
+export function isVisibleUnclipped(element: Element): boolean {
+  return isVisible(element) && !isClippedAway(element);
+}
+
 export function rectCenter(element: Element): ClickPoint {
   const rect = element.getBoundingClientRect();
   return {
@@ -176,7 +217,7 @@ export function isControlDisabled(element: Element): boolean {
   }
   if (element.getAttribute("aria-disabled") === "true") return true;
   const className = typeof element.className === "string" ? element.className : "";
-  return /(?:^|\s)(?:disabled|is-disabled|ui-state-disabled|flatpickr-disabled|pika-disabled)(?:\s|$)/i.test(
+  return /(?:^|\s)(?:disabled|is-disabled|ui-state-disabled|flatpickr-disabled|pika-disabled|ajax__calendar_invalid)(?:\s|$)/i.test(
     className,
   );
 }

@@ -175,7 +175,7 @@ export class CalendarDriver {
   private async openCalendar(): Promise<Element | null> {
     const visibleBefore = snapshotVisibleElements();
     const existing = findCalendarCandidate(this.field);
-    if (existing && analyzeCalendar(existing)) {
+    if (existing && this.recognizeCalendar(existing)) {
       this.logStep("calendar", "found an already open calendar");
       return existing;
     }
@@ -183,7 +183,7 @@ export class CalendarDriver {
     focusWithoutScroll(this.field);
     await sleep(120);
     const afterFocus = findCalendarCandidate(this.field);
-    if (afterFocus && analyzeCalendar(afterFocus)) {
+    if (afterFocus && this.recognizeCalendar(afterFocus)) {
       this.logStep("calendar", "calendar opened when the field received focus");
       return afterFocus;
     }
@@ -209,6 +209,11 @@ export class CalendarDriver {
     return null;
   }
 
+  private recognizeCalendar(element: Element): CalendarView | null {
+    const view = analyzeCalendar(element);
+    return view && view.kind !== "unknown" ? view : null;
+  }
+
   private async waitForCalendar(
     beforeVisible: Set<Element>,
     timeoutMs: number,
@@ -217,7 +222,7 @@ export class CalendarDriver {
     while (performance.now() < deadline) {
       const candidate =
         findCalendarCandidate(this.field, beforeVisible) ?? findCalendarCandidate(this.field);
-      if (candidate && analyzeCalendar(candidate)) {
+      if (candidate && this.recognizeCalendar(candidate)) {
         this.logStep("calendar", "calendar popup detected");
         return candidate;
       }
@@ -245,12 +250,14 @@ export class CalendarDriver {
       const near: Element | null = current.parentElement;
       if (!near) break;
       for (const element of near.querySelectorAll(
-        "button, [role='button'], a, span[class*='calendar' i], span[class*='date' i], i[class*='calendar' i]",
+        "button, input[type='image'], [role='button'], a, span[class*='calendar' i], span[class*='date' i], i[class*='calendar' i]",
       )) {
         if (element === this.field || !isVisible(element) || isControlDisabled(element)) continue;
         const hints = `${element.getAttribute("aria-label") ?? ""} ${
           element.getAttribute("title") ?? ""
-        } ${typeof element.className === "string" ? element.className : ""} ${shortText(element, 40)}`;
+        } ${element.getAttribute("alt") ?? ""} ${
+          typeof element.className === "string" ? element.className : ""
+        } ${shortText(element, 40)}`;
         if (!/(calendar|date|picker|icon)/i.test(hints) && element.querySelector("svg") === null) {
           continue;
         }
@@ -262,9 +269,15 @@ export class CalendarDriver {
   }
 
   private refreshCalendar(): Element | null {
+    if (
+      this.lastCalendar?.isConnected &&
+      isVisible(this.lastCalendar) &&
+      this.recognizeCalendar(this.lastCalendar)
+    ) {
+      return this.lastCalendar;
+    }
     const found = findCalendarCandidate(this.field);
-    if (found) return found;
-    if (this.lastCalendar?.isConnected && isVisible(this.lastCalendar)) return this.lastCalendar;
+    if (found && this.recognizeCalendar(found)) return found;
     return null;
   }
 
@@ -422,6 +435,7 @@ export class CalendarDriver {
     let directTried = false;
     let zoomTried = false;
     let zoomAttempts = 0;
+    let monthZoomTried = false;
     let safety = 0;
 
     for (;;) {
@@ -489,6 +503,25 @@ export class CalendarDriver {
               }
               continue;
             }
+
+            // Prefer the header's zoom control. It usually opens a year grid,
+            // which reaches a distant year in a few pages instead of dozens of
+            // one-year steps.
+            if (!monthZoomTried && view.header) {
+              monthZoomTried = true;
+              const beforeSignature = view.signature;
+              await this.click(view.header, "open year view", true);
+              const zoomed = this.readView();
+              if (
+                zoomed &&
+                zoomed.signature !== beforeSignature &&
+                (zoomed.kind === "year" || zoomed.kind === "decade")
+              ) {
+                view = zoomed;
+                continue;
+              }
+            }
+
             view = await this.navigateYear(view);
             continue;
           }
@@ -648,15 +681,19 @@ export class CalendarDriver {
   }
 
   private async closeCalendarIfOpen(): Promise<void> {
-    const root = this.refreshCalendar();
-    if (!root) return;
+    if (
+      !this.lastCalendar?.isConnected ||
+      !isVisible(this.lastCalendar) ||
+      !this.recognizeCalendar(this.lastCalendar)
+    ) {
+      return;
+    }
     this.logStep("close calendar", "pressing Escape");
     dispatchKey(document, "Escape");
     await sleep(120);
-    if (this.refreshCalendar()) {
+    if (isVisible(this.lastCalendar) && this.recognizeCalendar(this.lastCalendar)) {
       this.logStep("close calendar", "clicking outside the calendar");
-      const outside = document.body;
-      dispatchClickSequence(outside, { x: 1, y: 1 });
+      dispatchClickSequence(document.body, { x: 1, y: 1 });
       await sleep(120);
     }
   }

@@ -1020,7 +1020,7 @@
       year = numericParts[2]?.value ?? 0;
       dayPart = numericParts[0] ?? { text: "", value: 0 };
       monthPart = numericParts[1] ?? { text: "", value: 0 };
-      if (dayPart.value <= 12 && monthPart.value <= 12) {
+      if (dayPart.value <= 12 && monthPart.value <= 12 && dayPart.value !== monthPart.value) {
         ambiguous = true;
       } else if (dayPart.value <= 12 && monthPart.value > 12) {
         [dayPart, monthPart] = [monthPart, dayPart];
@@ -1031,7 +1031,8 @@
       year = resolveTwoDigitYear(third.value);
       dayPart = numericParts[0] ?? { text: "", value: 0 };
       monthPart = numericParts[1] ?? { text: "", value: 0 };
-      if (dayPart.value <= 12 && monthPart.value <= 12) ambiguous = true;
+      if (dayPart.value <= 12 && monthPart.value <= 12 && dayPart.value !== monthPart.value)
+        ambiguous = true;
       else if (dayPart.value <= 12 && monthPart.value > 12)
         [dayPart, monthPart] = [monthPart, dayPart];
     }
@@ -1202,6 +1203,37 @@
     if (Number.parseFloat(style.opacity) === 0) return false;
     return true;
   }
+  var CLIPPING_OVERFLOW = /^(?:hidden|clip|auto|scroll)$/;
+  function isClippedAway(element) {
+    if (!(element instanceof Element)) return false;
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return true;
+    const documentElement = element.ownerDocument.documentElement;
+    const body = element.ownerDocument.body;
+    let node = element.parentNode;
+    while (node) {
+      if (node instanceof ShadowRoot) {
+        node = node.host;
+        continue;
+      }
+      if (!(node instanceof Element)) break;
+      if (node !== documentElement && node !== body) {
+        const style = getComputedStyle(node);
+        const clipsX = CLIPPING_OVERFLOW.test(style.overflowX || style.overflow || "");
+        const clipsY = CLIPPING_OVERFLOW.test(style.overflowY || style.overflow || "");
+        if (clipsX || clipsY) {
+          const box = node.getBoundingClientRect();
+          if (clipsX && (rect.right <= box.left || rect.left >= box.right)) return true;
+          if (clipsY && (rect.bottom <= box.top || rect.top >= box.bottom)) return true;
+        }
+      }
+      node = node.parentNode;
+    }
+    return false;
+  }
+  function isVisibleUnclipped(element) {
+    return isVisible(element) && !isClippedAway(element);
+  }
   function rectCenter(element) {
     const rect = element.getBoundingClientRect();
     return {
@@ -1299,7 +1331,7 @@
     }
     if (element.getAttribute("aria-disabled") === "true") return true;
     const className = typeof element.className === "string" ? element.className : "";
-    return /(?:^|\s)(?:disabled|is-disabled|ui-state-disabled|flatpickr-disabled|pika-disabled)(?:\s|$)/i.test(
+    return /(?:^|\s)(?:disabled|is-disabled|ui-state-disabled|flatpickr-disabled|pika-disabled|ajax__calendar_invalid)(?:\s|$)/i.test(
       className
     );
   }
@@ -1347,15 +1379,17 @@
   }
 
   // src/content/calendar.ts
-  var OUTSIDE_CLASS = /(^|\s)(old|new|outside|other-month|othermonth|prev-month|next-month|prevmonday|nextmonday|adjacent|is-outside-month|is-other-month|prevMonthDay|nextMonthDay|datepicker-other-month|otherMonth)(\s|$)/;
-  var DISABLED_CLASS = /(^|\s)(disabled|is-disabled|ui-state-disabled|flatpickr-disabled|pika-disabled)(\s|$)/i;
+  var OUTSIDE_CLASS = /(^|\s)(old|new|outside|other-month|othermonth|prev-month|next-month|prevmonday|nextmonday|adjacent|is-outside-month|is-other-month|prevMonthDay|nextMonthDay|datepicker-other-month|otherMonth|ajax__calendar_other|ajax__calendar_othermonth)(\s|$)/;
+  var DISABLED_CLASS = /(^|\s)(disabled|is-disabled|ui-state-disabled|flatpickr-disabled|pika-disabled|ajax__calendar_invalid)(\s|$)/i;
   var CELL_SELECTOR = "td,th,button,a,span,div,[role='gridcell'],[data-date],[data-day],[data-month],[data-year]";
   var HEADER_SELECTORS = [
+    ".ajax__calendar_title",
     ".datepicker-switch",
     ".ui-datepicker-title",
     ".flatpickr-current-month",
     ".pika-label",
     "[class*='calendar-title' i]",
+    "[class*='calendar_title' i]",
     "[class*='picker-title' i]",
     "[class*='datepicker-title' i]",
     "[class*='calendar-header' i]",
@@ -1436,14 +1470,25 @@
       return 0;
     }
     if (element === element.ownerDocument.documentElement) return 0;
-    if (!isVisible(element)) return 0;
+    if (!isVisibleUnclipped(element)) return 0;
     const text = shortText(element, 25e3);
     if (!text) return 0;
     const hints = hintText(element);
+    const role = element.getAttribute("role");
+    const explicitHints = KNOWN_CONTAINER_HINTS.test(hints) || role === "grid" || role === "dialog" || element.matches("[data-datepicker], [data-calendar]");
+    if (!explicitHints) {
+      if (element.matches("form, main, nav, header, footer, article, section")) return 0;
+      if (element.contains(field)) return 0;
+      const controls = element.querySelectorAll(
+        "input:not([type='hidden']), select, textarea"
+      ).length;
+      if (controls > 12) return 0;
+      if (text.length > 12e3) return 0;
+    }
     let score = 0;
     if (KNOWN_CONTAINER_HINTS.test(hints)) score += 32;
-    if (element.getAttribute("role") === "grid") score += 12;
-    if (element.getAttribute("role") === "dialog") score += 10;
+    if (role === "grid") score += 12;
+    if (role === "dialog") score += 10;
     if (element.matches("table")) score += 5;
     if (element.matches("[role='dialog'], [role='grid'], [data-datepicker], [data-calendar]"))
       score += 6;
@@ -1496,7 +1541,7 @@
   }
   function visibleWithin(root, selector) {
     return [...root.querySelectorAll(selector)].filter(
-      (element) => !isExtensionUi(element) && isVisible(element)
+      (element) => !isExtensionUi(element) && isVisibleUnclipped(element)
     );
   }
   function deepestUnique(elements) {
@@ -1711,13 +1756,17 @@
       const hints = `${hintText(element)} ${element.getAttribute("title") ?? ""} ${text}`;
       let score = 0;
       if (direction === "prev") {
-        if (/ui-datepicker-prev|flatpickr-prev-month|pika-prev|(^|\s)prev(\s|$)/i.test(hints)) {
+        if (/ui-datepicker-prev|flatpickr-prev-month|pika-prev|ajax__calendar_prev|(^|\s)prev(\s|$)/i.test(
+          hints
+        )) {
           score += 50;
         }
         if (/\b(prev|previous|back|earlier)\b/i.test(hints)) score += 35;
         if (/^[«‹<←◀]$/.test(text)) score += 30;
       } else {
-        if (/ui-datepicker-next|flatpickr-next-month|pika-next|(^|\s)next(\s|$)/i.test(hints)) {
+        if (/ui-datepicker-next|flatpickr-next-month|pika-next|ajax__calendar_next|(^|\s)next(\s|$)/i.test(
+          hints
+        )) {
           score += 50;
         }
         if (/\b(next|forward|later)\b/i.test(hints)) score += 35;
@@ -2480,14 +2529,14 @@
     async openCalendar() {
       const visibleBefore = snapshotVisibleElements();
       const existing = findCalendarCandidate(this.field);
-      if (existing && analyzeCalendar(existing)) {
+      if (existing && this.recognizeCalendar(existing)) {
         this.logStep("calendar", "found an already open calendar");
         return existing;
       }
       focusWithoutScroll(this.field);
       await sleep(120);
       const afterFocus = findCalendarCandidate(this.field);
-      if (afterFocus && analyzeCalendar(afterFocus)) {
+      if (afterFocus && this.recognizeCalendar(afterFocus)) {
         this.logStep("calendar", "calendar opened when the field received focus");
         return afterFocus;
       }
@@ -2510,11 +2559,15 @@
       }
       return null;
     }
+    recognizeCalendar(element) {
+      const view = analyzeCalendar(element);
+      return view && view.kind !== "unknown" ? view : null;
+    }
     async waitForCalendar(beforeVisible, timeoutMs) {
       const deadline = performance.now() + timeoutMs;
       while (performance.now() < deadline) {
         const candidate = findCalendarCandidate(this.field, beforeVisible) ?? findCalendarCandidate(this.field);
-        if (candidate && analyzeCalendar(candidate)) {
+        if (candidate && this.recognizeCalendar(candidate)) {
           this.logStep("calendar", "calendar popup detected");
           return candidate;
         }
@@ -2540,10 +2593,10 @@
         const near = current.parentElement;
         if (!near) break;
         for (const element of near.querySelectorAll(
-          "button, [role='button'], a, span[class*='calendar' i], span[class*='date' i], i[class*='calendar' i]"
+          "button, input[type='image'], [role='button'], a, span[class*='calendar' i], span[class*='date' i], i[class*='calendar' i]"
         )) {
           if (element === this.field || !isVisible(element) || isControlDisabled(element)) continue;
-          const hints = `${element.getAttribute("aria-label") ?? ""} ${element.getAttribute("title") ?? ""} ${typeof element.className === "string" ? element.className : ""} ${shortText(element, 40)}`;
+          const hints = `${element.getAttribute("aria-label") ?? ""} ${element.getAttribute("title") ?? ""} ${element.getAttribute("alt") ?? ""} ${typeof element.className === "string" ? element.className : ""} ${shortText(element, 40)}`;
           if (!/(calendar|date|picker|icon)/i.test(hints) && element.querySelector("svg") === null) {
             continue;
           }
@@ -2554,9 +2607,11 @@
       return [...new Set(candidates)];
     }
     refreshCalendar() {
+      if (this.lastCalendar?.isConnected && isVisible(this.lastCalendar) && this.recognizeCalendar(this.lastCalendar)) {
+        return this.lastCalendar;
+      }
       const found = findCalendarCandidate(this.field);
-      if (found) return found;
-      if (this.lastCalendar?.isConnected && isVisible(this.lastCalendar)) return this.lastCalendar;
+      if (found && this.recognizeCalendar(found)) return found;
       return null;
     }
     readView() {
@@ -2692,6 +2747,7 @@
       let directTried = false;
       let zoomTried = false;
       let zoomAttempts = 0;
+      let monthZoomTried = false;
       let safety = 0;
       for (; ; ) {
         safety += 1;
@@ -2753,6 +2809,16 @@
                   return;
                 }
                 continue;
+              }
+              if (!monthZoomTried && view.header) {
+                monthZoomTried = true;
+                const beforeSignature = view.signature;
+                await this.click(view.header, "open year view", true);
+                const zoomed = this.readView();
+                if (zoomed && zoomed.signature !== beforeSignature && (zoomed.kind === "year" || zoomed.kind === "decade")) {
+                  view = zoomed;
+                  continue;
+                }
               }
               view = await this.navigateYear(view);
               continue;
@@ -2903,15 +2969,15 @@
       return next;
     }
     async closeCalendarIfOpen() {
-      const root = this.refreshCalendar();
-      if (!root) return;
+      if (!this.lastCalendar?.isConnected || !isVisible(this.lastCalendar) || !this.recognizeCalendar(this.lastCalendar)) {
+        return;
+      }
       this.logStep("close calendar", "pressing Escape");
       dispatchKey(document, "Escape");
       await sleep(120);
-      if (this.refreshCalendar()) {
+      if (isVisible(this.lastCalendar) && this.recognizeCalendar(this.lastCalendar)) {
         this.logStep("close calendar", "clicking outside the calendar");
-        const outside = document.body;
-        dispatchClickSequence(outside, { x: 1, y: 1 });
+        dispatchClickSequence(document.body, { x: 1, y: 1 });
         await sleep(120);
       }
     }
@@ -3583,7 +3649,8 @@
         ancestorBudget -= Math.min(html.length, ancestorBudget);
         ancestor = ancestor.parentElement;
       }
-      const openCalendar = findCalendarCandidate(this.field);
+      const driverCalendar = this.driverResult?.calendarElement;
+      const openCalendar = driverCalendar?.isConnected ? driverCalendar : findCalendarCandidate(this.field);
       const calendarHtml = openCalendar ? sanitizedOuterHtml(openCalendar, true, 20480) : STRINGS.diagnostics.none;
       const libraries = describeLibrary(this.libraryInfo);
       const stepLines = [

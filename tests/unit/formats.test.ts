@@ -310,6 +310,23 @@ describe("loose parsing", () => {
     });
   });
 
+  it("does not call equal day and month parts ambiguous", () => {
+    expect(looseParseDate("2/2/2026")).toMatchObject({
+      year: 2026,
+      month: 2,
+      day: 2,
+      valid: true,
+      ambiguous: false,
+    });
+    expect(looseParseDate("02/02/2026")).toMatchObject({
+      year: 2026,
+      month: 2,
+      day: 2,
+      valid: true,
+      ambiguous: false,
+    });
+  });
+
   it("parses month and year only", () => {
     expect(looseParseDate("03/2026")).toMatchObject({
       year: 2026,

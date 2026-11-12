@@ -1,0 +1,119 @@
+.date-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.date-row input[type="text"] {
+  flex: 1;
+}
+
+.ajax__calendar {
+  position: absolute;
+  z-index: 30;
+  width: 188px;
+  border: 1px solid #646464;
+  background: #ffffff;
+  color: #111111;
+  font-size: 0.9rem;
+}
+
+.ajax__calendar[hidden] {
+  display: none;
+}
+
+.ajax__calendar_header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+  padding: 0 4px;
+  border-bottom: 1px solid #646464;
+  background: #d4d0c8;
+}
+
+.ajax__calendar_prev,
+.ajax__calendar_next {
+  width: 24px;
+  height: 20px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.ajax__calendar_title {
+  flex: 1;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+}
+
+.ajax__calendar_body {
+  position: relative;
+  width: 186px;
+  height: 139px;
+  overflow: hidden;
+}
+
+.ajax__calendar_days,
+.ajax__calendar_months,
+.ajax__calendar_years {
+  position: absolute;
+  left: 0;
+  width: 186px;
+  height: 139px;
+}
+
+.ajax__calendar_days {
+  top: 0;
+}
+
+.ajax__calendar_months,
+.ajax__calendar_years {
+  top: 139px;
+}
+
+.ajax__calendar table {
+  width: 100%;
+  height: 100%;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.ajax__calendar th {
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.ajax__calendar td {
+  padding: 0;
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.ajax__calendar_day,
+.ajax__calendar_month,
+.ajax__calendar_year {
+  padding: 2px 0;
+}
+
+.ajax__calendar_other,
+.ajax__calendar_invalid {
+  color: #777777;
+  cursor: default;
+}
+
+.ajax__calendar_active {
+  background: #004f9e;
+  color: #ffffff;
+}
+
+.ajax__calendar_footer {
+  padding: 2px 4px;
+  border-top: 1px solid #646464;
+  text-align: center;
+}
+
+.ajax__calendar_today {
+  cursor: pointer;
+}

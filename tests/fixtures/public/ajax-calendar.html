@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ASP.NET AJAX calendar</title>
+    <link rel="stylesheet" href="/fixture.css" />
+    <link rel="stylesheet" href="/ajax-calendar.css" />
+  </head>
+  <body>
+    <main>
+      <h1>ASP.NET AJAX Control Toolkit calendar</h1>
+      <p>
+        The date field is readonly and the calendar opens from the image button. The popup keeps
+        every view in the page and slides the inactive ones out of a clipped body.
+      </p>
+      <form id="aspnetForm" action="#" method="post">
+        <div class="field date-with-button">
+          <label for="ctl00_ContentPlaceHolder1_Wizard1_txtDOB">Date of birth</label>
+          <span class="date-row">
+            <input
+              id="ctl00_ContentPlaceHolder1_Wizard1_txtDOB"
+              name="ctl00$ContentPlaceHolder1$Wizard1$txtDOB"
+              type="text"
+              value="2/2/2026"
+              readonly="readonly"
+              autocomplete="off"
+            />
+            <input
+              id="ctl00_ContentPlaceHolder1_Wizard1_CalendarButton"
+              name="ctl00$ContentPlaceHolder1$Wizard1$CalendarButton"
+              class="ajax__calendar_button"
+              type="image"
+              src="/calendar.svg"
+              alt="Calendar"
+              title="Calendar"
+              width="24"
+              height="24"
+            />
+          </span>
+        </div>
+        <div class="field">
+          <label for="reference">Reference</label>
+          <input id="reference" name="reference" type="text" value="BOP-2026-01" />
+        </div>
+      </form>
+      <div
+        class="ajax__calendar"
+        id="ctl00_ContentPlaceHolder1_Wizard1_CalendarExtender_calendar"
+        data-adp-calendar-extender
+        hidden
+      >
+        <div class="ajax__calendar_header">
+          <div class="ajax__calendar_prev" title="Previous">
+            <div class="ajax__calendar_prevArrow">‹</div>
+          </div>
+          <div class="ajax__calendar_title" title="Change view"></div>
+          <div class="ajax__calendar_next" title="Next">
+            <div class="ajax__calendar_nextArrow">›</div>
+          </div>
+        </div>
+        <div class="ajax__calendar_body">
+          <div class="ajax__calendar_days"></div>
+          <div class="ajax__calendar_months"></div>
+          <div class="ajax__calendar_years"></div>
+        </div>
+        <div class="ajax__calendar_footer">
+          <div class="ajax__calendar_today">Today</div>
+        </div>
+      </div>
+    </main>
+    <script src="/ajax-calendar.js"></script>
+  </body>
+</html>

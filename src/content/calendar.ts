@@ -1,7 +1,14 @@
 import { MONTH_ABBREVIATIONS, MONTH_NAMES } from "../strings.js";
 import { looseParseDate } from "../shared/formats.js";
 import { monthFromName, type CivilDate } from "../shared/date.js";
-import { allRoots, hasDisabledAncestor, isControlDisabled, isVisible, shortText } from "./dom.js";
+import {
+  allRoots,
+  hasDisabledAncestor,
+  isControlDisabled,
+  isVisible,
+  isVisibleUnclipped,
+  shortText,
+} from "./dom.js";
 
 export type CalendarKind = "day" | "month" | "year" | "decade" | "unknown";
 
@@ -37,20 +44,22 @@ export interface CalendarView {
 }
 
 const OUTSIDE_CLASS =
-  /(^|\s)(old|new|outside|other-month|othermonth|prev-month|next-month|prevmonday|nextmonday|adjacent|is-outside-month|is-other-month|prevMonthDay|nextMonthDay|datepicker-other-month|otherMonth)(\s|$)/;
+  /(^|\s)(old|new|outside|other-month|othermonth|prev-month|next-month|prevmonday|nextmonday|adjacent|is-outside-month|is-other-month|prevMonthDay|nextMonthDay|datepicker-other-month|otherMonth|ajax__calendar_other|ajax__calendar_othermonth)(\s|$)/;
 
 const DISABLED_CLASS =
-  /(^|\s)(disabled|is-disabled|ui-state-disabled|flatpickr-disabled|pika-disabled)(\s|$)/i;
+  /(^|\s)(disabled|is-disabled|ui-state-disabled|flatpickr-disabled|pika-disabled|ajax__calendar_invalid)(\s|$)/i;
 
 const CELL_SELECTOR =
   "td,th,button,a,span,div,[role='gridcell'],[data-date],[data-day],[data-month],[data-year]";
 
 const HEADER_SELECTORS = [
+  ".ajax__calendar_title",
   ".datepicker-switch",
   ".ui-datepicker-title",
   ".flatpickr-current-month",
   ".pika-label",
   "[class*='calendar-title' i]",
+  "[class*='calendar_title' i]",
   "[class*='picker-title' i]",
   "[class*='datepicker-title' i]",
   "[class*='calendar-header' i]",
@@ -148,15 +157,35 @@ function scoreCandidate(
     return 0;
   }
   if (element === element.ownerDocument.documentElement) return 0;
-  if (!isVisible(element)) return 0;
+  if (!isVisibleUnclipped(element)) return 0;
 
   const text = shortText(element, 25_000);
   if (!text) return 0;
   const hints = hintText(element);
+  const role = element.getAttribute("role");
+  const explicitHints =
+    KNOWN_CONTAINER_HINTS.test(hints) ||
+    role === "grid" ||
+    role === "dialog" ||
+    element.matches("[data-datepicker], [data-calendar]");
+
+  // A page, form, or layout region that happens to contain a nested day table
+  // is not a calendar. Without an explicit calendar hint these are rejected so
+  // a diagnostic or a driver never treats a whole form as the open popup.
+  if (!explicitHints) {
+    if (element.matches("form, main, nav, header, footer, article, section")) return 0;
+    if (element.contains(field)) return 0;
+    const controls = element.querySelectorAll(
+      "input:not([type='hidden']), select, textarea",
+    ).length;
+    if (controls > 12) return 0;
+    if (text.length > 12_000) return 0;
+  }
+
   let score = 0;
   if (KNOWN_CONTAINER_HINTS.test(hints)) score += 32;
-  if (element.getAttribute("role") === "grid") score += 12;
-  if (element.getAttribute("role") === "dialog") score += 10;
+  if (role === "grid") score += 12;
+  if (role === "dialog") score += 10;
   if (element.matches("table")) score += 5;
   if (element.matches("[role='dialog'], [role='grid'], [data-datepicker], [data-calendar]"))
     score += 6;
@@ -226,7 +255,7 @@ export function findCalendarCandidate(
 
 function visibleWithin(root: Element, selector: string): Element[] {
   return [...root.querySelectorAll(selector)].filter(
-    (element) => !isExtensionUi(element) && isVisible(element),
+    (element) => !isExtensionUi(element) && isVisibleUnclipped(element),
   );
 }
 
@@ -485,13 +514,21 @@ function findNav(root: Element, direction: "prev" | "next"): Element | null {
     const hints = `${hintText(element)} ${element.getAttribute("title") ?? ""} ${text}`;
     let score = 0;
     if (direction === "prev") {
-      if (/ui-datepicker-prev|flatpickr-prev-month|pika-prev|(^|\s)prev(\s|$)/i.test(hints)) {
+      if (
+        /ui-datepicker-prev|flatpickr-prev-month|pika-prev|ajax__calendar_prev|(^|\s)prev(\s|$)/i.test(
+          hints,
+        )
+      ) {
         score += 50;
       }
       if (/\b(prev|previous|back|earlier)\b/i.test(hints)) score += 35;
       if (/^[«‹<←◀]$/.test(text)) score += 30;
     } else {
-      if (/ui-datepicker-next|flatpickr-next-month|pika-next|(^|\s)next(\s|$)/i.test(hints)) {
+      if (
+        /ui-datepicker-next|flatpickr-next-month|pika-next|ajax__calendar_next|(^|\s)next(\s|$)/i.test(
+          hints,
+        )
+      ) {
         score += 50;
       }
       if (/\b(next|forward|later)\b/i.test(hints)) score += 35;
