@@ -73,9 +73,11 @@ Consequences: calendar icon buttons work without touching an unrelated field. Fo
 
 ## 11. Calendar driver limits
 
-The driver has a ten-second budget, a forty-step limit, and an eighty-iteration loop guard. It uses visibility checks, reads calendar headers and cell metadata, supports day, month, year, and decade views, and stops with a `stuck` message when the calendar does not respond.
+The driver has a twenty-second budget, a forty-step limit, and an eighty-iteration loop guard. It uses visibility checks, reads calendar headers and cell metadata, supports day, month, year, and decade views, and stops with a `stuck` message when the calendar does not respond.
 
-Consequences: an unresponsive widget cannot hang the page. Some very large or unusual calendars stop early rather than risking a long interaction.
+The budget is larger than the first ten-second version because many widgets animate view changes for roughly a quarter of a second and ignore input while they animate. The driver now waits for the page to stop changing before it reads or clicks again.
+
+Consequences: an unresponsive widget cannot hang the page, but a slow calendar can hold the tab for up to twenty seconds. Some very large or unusual calendars stop early rather than risking a long interaction.
 
 ## 12. Discovery and safety rules
 
@@ -143,10 +145,58 @@ When the visible year is far from the target, the driver first tries the calenda
 
 Closing is restricted to the calendar element the driver actually opened. Escape is pressed once, then an outside click is used only if that same element is still visible and still recognized. Unrelated calendars on the page are not touched.
 
-Consequences: a date many years away can be reached within the ten-second budget, and a failed attempt cannot close a different widget on the same page.
+Consequences: a date many years away can be reached within the current time budget, and a failed attempt cannot close a different widget on the same page.
 
 ## 23. Equal day and month numbers are not ambiguous
 
 A numeric value such as `2/2/2026` has two possible readings, day-first and month-first, but both produce the same date. The parser now marks only values whose two readings differ as ambiguous. This keeps refusal for values such as `03/04/2026` while allowing a site that writes the same number twice to verify successfully.
 
 Consequences: the readonly Bank of Punjab field can be verified after the calendar writes `2/2/2001` even when no format clue exists. The success message still shows the exact text the page contains.
+
+## 24. Wait for calendar animations before reading or clicking
+
+Calendar widgets often animate a view change and ignore input while the animation runs. The ASP.NET AJAX CalendarExtender is one example: it moves the day, month, and year views for about 250 milliseconds and discards clicks until the movement ends. The driver previously read the calendar and clicked the next control during that window. The result was an ignored click, a half-moved view, or a `null` reading that looked like a closed popup.
+
+After every click, focus, and select change, the driver now waits for DOM mutations to become quiet. It also waits for any running element animations to finish and requires two matching view readings before it acts on a view signature. A separate re-read confirms that the view is stable.
+
+The local CalendarExtender fixture now animates its view changes and ignores clicks while animating, so the end-to-end test reproduces the real behaviour instead of testing a static popup.
+
+Consequences: each calendar action can take a little longer, which is why the time budget is twenty seconds. The driver no longer treats a mid-animation empty reading as a successful close, and it no longer loses clicks that the page ignored.
+
+## 25. Compact diagnostics and clearing collected steps
+
+The diagnostic report used to list every driver action twice: once in the flow log and once in the driver log. It now records one summary line for the calendar driver, with its status, mode, step count, elapsed time, last step, and detail. The Steps section contains the flow, layer, verification, and driver summary lines only.
+
+The collected steps are cleared after every copy. They are also cleared when the dialog is dismissed with Escape, when a failed flow returns focus to the field, and when a successful flow closes the dialog. The final result line is kept so a second copy in the same dialog still reports the outcome. The report still includes sanitized field, ancestor, and calendar HTML because that evidence is what makes a broken widget diagnosable.
+
+Consequences: reports are much shorter and are not carried forward from an earlier action. A second copy immediately after the first shows `None` under Steps, which is intentional and is covered by an end-to-end test.
+
+## 26. Distribution is a zip, with the Chrome Web Store for public install
+
+The build produces a normal Manifest V3 directory. `npm run package` always rebuilds the production extension and zips the contents of `dist/` with `manifest.json` at the zip root. That zip is both the file a person can unzip for **Load unpacked** and the file the Chrome Web Store expects for an upload.
+
+No `.crx` file is produced. Chrome restricts installation of `.crx` files that do not come from the Web Store, so a self-hosted CRX is not a reliable sharing path.
+
+Consequences: sharing with a few people means sending the zip and asking them to enable Developer mode. Sharing with the public means a Web Store listing, which also provides installation and updates without Developer mode. Unpacked copies do not update automatically.
+
+## 27. Zebra DatePicker support and dependent fields
+
+The Punjab Jobs profile form uses Zebra DatePicker on its date of birth field and calculates the age field only inside the widget's `onClose` callback. A plain value write left the age empty.
+
+Two changes handle this. First, the calendar driver now recognizes Zebra's `.dp_caption` header and its `dp_previous` and `dp_next` controls, so clicking the header opens the year grid and a distant year is reached in a few steps instead of walking month by month. Without that recognition the driver exhausted its budget and never triggered the widget's close handler.
+
+Second, a Zebra adapter uses the widget's public `set_date` method with the site's own format pattern. It then dispatches `input` and `change`, calls `show()`, and calls `hide()`. Zebra runs the site's `onChange` while rendering and its `onClose` when the calendar hides, so the site's own dependent-field logic runs. The adapter is a fallback for the case where the calendar cannot be shown or driven.
+
+Zebra format tokens differ from the extension's pattern language, so they are converted separately: `d` is a padded day, `j` is an unpadded day, `m` and `n` are padded and unpadded month, `M` and `F` are short and long month names, and `y` and `Y` are two-digit and four-digit years.
+
+Consequences: the profile form updates both the date and the age from the extension dialog. The test fixture vendors the Zebra script served by the real site and checks the age field on both the driver path and the blocked-popup adapter path. This is proven locally against that vendored script, not yet against the live site.
+
+## 28. The project is published on GitHub with a release zip
+
+The public home of the project is `github.com/KhanHassanRiaz/accessible-date-picker`. The repository contains the full source, tests, fixtures, documentation, and the prebuilt `dist/` directory. The versioned zip built by `npm run package` is not committed: it is attached to a GitHub release under the matching `v` tag, which is the file people download to load the extension unpacked.
+
+`dist/` stays in the repository even though it is generated, because cloning the repo and choosing **Load unpacked** on `dist/` is the shortest keyboard path for a person who already knows git. The zip in the release serves people who do not. `.gitignore` excludes `node_modules`, test output, and `*.zip` so the release zip can never be committed by accident.
+
+The README is written for that public repository: installation first from a release zip, then from the repository, then from source. The earlier local "Share or publish" store instructions were folded into the install section and the development release checklist.
+
+Consequences: publishing a new version means raising the version in `manifest.json` and `package.json`, running `npm run package`, committing, tagging, and attaching the fresh zip to the release. Every zip must come from a fresh production build so a test-build manifest with local host permissions can never be shipped to users.

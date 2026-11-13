@@ -1,21 +1,38 @@
 # Accessible Date Picker
 
-Accessible Date Picker is a Chrome extension that lets you set a date on websites whose own calendars are hard or impossible to use with a keyboard and a screen reader. Focus a date field, press a shortcut, choose a day, month, and year in a plain dialog, and the extension writes the date back into the page.
+A keyboard-first date picker helper for websites whose own calendars are hard or impossible to use with a keyboard and a screen reader. Focus a date field, press a shortcut, choose a day, month, and year in a plain dialog, and the extension writes the date back into the page.
 
 The extension works with the keyboard alone. It verifies what the page actually contains after every write and announces the real field value. It never guesses between an ambiguous day and month. It makes no network requests and stores no dates.
 
 ## Install
 
-The repository includes a prebuilt, loadable extension in `dist/`.
+### From a release (recommended)
 
-1. Open `chrome://extensions`.
-2. Turn on Developer mode.
-3. Choose **Load unpacked** and select the `dist` directory.
-4. Optionally pin the Accessible Date Picker button to the toolbar.
+1. Open the [Releases page](https://github.com/KhanHassanRiaz/accessible-date-picker/releases) and download the latest `accessible-date-picker-x.y.z.zip`.
+2. Unzip it anywhere you like.
+3. Open `chrome://extensions` in Chrome.
+4. Turn on **Developer mode**.
+5. Choose **Load unpacked** and select the unzipped folder.
+6. Optionally pin the Accessible Date Picker button to the toolbar.
 
-To build the zip package instead, run `npm install` and then `npm run package`. The package command always builds the production extension first, then writes `accessible-date-picker-1.0.0.zip` in the project root. Unzip it and load the unzipped directory as an unpacked extension.
+Chrome 102 or newer is required. Unpacked extensions are not updated automatically: when a new release appears, download and unzip it, and load the new folder. Chrome shows a developer-mode warning for unpacked extensions.
 
-Chrome 102 or newer is required.
+For automatic installation and updates, the same zip can be uploaded to the Chrome Web Store. A store listing needs a developer account and the one-time registration fee.
+
+### From this repository
+
+The repository includes a prebuilt, loadable extension in `dist/`. Clone or download the repository, then follow steps 3 to 6 above and select the `dist` directory.
+
+To build everything from source:
+
+```sh
+npm install
+npm run package
+```
+
+The package command always builds the production extension first, then writes `accessible-date-picker-1.0.0.zip` in the project root. Unzip it and load the unzipped directory as an unpacked extension.
+
+On Windows PowerShell, use `npm.cmd` and `npx.cmd` if script execution policy blocks the `.ps1` wrappers.
 
 ## Use
 
@@ -42,11 +59,19 @@ The dialog has a **Copy diagnostic report** button. It copies a plain-text repor
 The extension tries four layers in order and stops at the first one that verifies correctly.
 
 1. **Native input.** If the field is an `input type="date"` or `input type="month"`, the extension sets its value directly.
-2. **Site calendar driver.** It looks for an open or openable calendar near the field, reads the visible month and year, changes the controls, clicks the correct day, and checks the field afterwards. The driver has a ten-second and forty-step budget so it cannot loop forever.
-3. **Library adapter.** It detects jQuery UI datepicker, bootstrap-datepicker, flatpickr, and Pikaday, then calls the library's public API in the page's main world. A temporary `data-adp-target` attribute identifies the field without exposing any value.
+2. **Site calendar driver.** It looks for an open or openable calendar near the field, reads the visible month and year, changes the controls, clicks the correct day, and checks the field afterwards. The driver waits for calendar animations to settle, and it has a twenty-second and forty-step budget so it cannot loop forever.
+3. **Library adapter.** It detects jQuery UI datepicker, bootstrap-datepicker, flatpickr, Pikaday, and Zebra DatePicker, then calls the library's public API in the page's main world. A temporary `data-adp-target` attribute identifies the field without exposing any value.
 4. **Direct write.** If a format is proven by the current value, placeholder, a format attribute, accessible text, the library configuration, or another date field on the page, the extension writes a formatted value and dispatches the usual input and change events.
 
 After every layer, the extension reads the field again. If the value does not match the requested date, it tries the next layer. The final check happens after focus returns to the field, so a late site script cannot silently replace the date.
+
+### Dependent fields
+
+Some sites calculate another field from the date only inside their calendar widget's own change or close callback. An age field derived from a date of birth is a common example. Writing a value straight into the input does not run that callback, so the dependent field stays empty.
+
+The site calendar driver clicks the widget's real controls, so the callbacks run as they do for a person. The Zebra DatePicker adapter calls the widget's date setter, dispatches input and change, then opens and hides the widget so the site's change and close callbacks still run. The jQuery UI adapter uses the library's own selection method so the site's `onSelect` handler runs.
+
+Consequently, the extension updates as much of the page as the widget itself does. It still checks the date field afterwards and reports the value the page contains. A dependent field that the site does not update in any callback remains the site's behavior, not something the extension invents.
 
 ### When the format is ambiguous
 
@@ -120,8 +145,6 @@ npm run test:e2e
 npm run package
 ```
 
-On Windows PowerShell, use `npm.cmd` and `npx.cmd` if script execution policy blocks the `.ps1` wrappers.
-
 `npm run build` writes the production extension to `dist/`. `npm run test:e2e` first writes a test build to the same directory, so run `npm run build` again before loading or packaging the production extension.
 
 Other useful commands:
@@ -134,6 +157,13 @@ Other useful commands:
 Unit tests use Vitest with jsdom. End-to-end tests use Playwright with a persistent Chromium profile and the built extension. The tests use local fixtures under `tests/fixtures/public`; they do not contact real websites.
 
 Playwright's Chromium build must be installed separately. If `npm run test:e2e` reports a missing executable, run `npx playwright install chromium`.
+
+### Release checklist
+
+1. Raise `version` in both `manifest.json` and `package.json`.
+2. Run `npm run test` and make sure everything passes.
+3. Run `npm run package`. This rebuilds `dist/` and writes the versioned zip in the project root.
+4. Commit and push, create a git tag such as `v1.1.0`, and attach the zip to a GitHub release.
 
 ## Project layout
 
@@ -156,9 +186,15 @@ These features are designed for speech-first use, but automated tests cannot pro
 
 ## Testing status
 
-Automated tests cover: native date and month inputs, dialog structure and keyboard trapping, day clamping, min and max bounds, the custom calendar driver, direct writing, ambiguous format refusal, focus isolation, month and year calendars, React, unresponsive calendars, read-only fields, open shadow roots, same-origin iframes, cross-origin iframes with the test build's fixture host permission, diagnostics, the options page, jQuery UI, bootstrap-datepicker, flatpickr, and Pikaday. The dialog is also checked with axe.
+Automated tests cover: native date and month inputs, dialog structure and keyboard trapping, day clamping, min and max bounds, the custom calendar driver, direct writing, ambiguous format refusal, focus isolation, month and year calendars, React, unresponsive calendars, read-only fields, open shadow roots, same-origin iframes, cross-origin iframes with the test build's fixture host permission, diagnostics, the options page, jQuery UI, bootstrap-datepicker, flatpickr, Pikaday, and Zebra DatePicker. The Zebra tests cover both the calendar driver path and the adapter path with a blocked popup, and both check that the site's calculated age field is updated. The dialog is also checked with axe.
 
 Not covered automatically: real NVDA speech output, real commercial websites, every browser and operating system combination, and Chrome Web Store installation.
+
+## Contributing
+
+Bug reports are welcome, especially ones that include the **Copy diagnostic report** output from the failing site. That report contains no page content beyond sanitized HTML around the date field, and it is never sent anywhere unless you paste it yourself.
+
+Before opening a pull request, run `npm run lint`, `npm run test:unit`, and `npm run test:e2e`, and note in the description what you tested and what remains untested.
 
 ## License
 
