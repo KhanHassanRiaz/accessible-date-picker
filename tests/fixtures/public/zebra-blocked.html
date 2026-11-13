@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zebra DatePicker with a hidden popup</title>
+    <link rel="stylesheet" href="/vendor/zebra.css" />
+    <style>
+      .Zebra_DatePicker {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Profile</h1>
+      <div class="field">
+        <label for="date_of_birth">Date of Birth</label>
+        <input
+          id="date_of_birth"
+          name="date_of_birth"
+          type="text"
+          data-date-format="dd-M-yyyy"
+          placeholder="dd-MM-yyyy"
+          readonly
+        />
+      </div>
+      <div class="field">
+        <label for="age_from_date_birth">Age</label>
+        <input id="age_from_date_birth" name="age" type="text" readonly />
+      </div>
+      <p class="status" id="status" role="status"></p>
+    </main>
+    <script src="/vendor/jquery.js"></script>
+    <script src="/vendor/zebra_datepicker.js"></script>
+    <script>
+      function getAge(birth) {
+        var today = new Date();
+        var currDate = today.getDate();
+        var currMonth = today.getMonth() + 1;
+        var currYear = today.getFullYear();
+        var pieces = birth.split("-");
+        var birthDate = pieces[2];
+        var birthMonth = pieces[1];
+        var birthYear = pieces[0];
+        if (currMonth == birthMonth && currDate >= birthDate) return parseInt(currYear - birthYear);
+        if (currMonth == birthMonth && currDate < birthDate)
+          return parseInt(currYear - birthYear - 1);
+        if (currMonth > birthMonth) return parseInt(currYear - birthYear);
+        if (currMonth < birthMonth) return parseInt(currYear - birthYear - 1);
+      }
+
+      function formatDate(date) {
+        var parseDate = date.split("-");
+        var monthNumber = new Date(Date.parse(parseDate[1] + " 1, 2012")).getMonth() + 1;
+        return parseDate[2] + "-" + monthNumber + "-" + parseDate[0];
+      }
+
+      function alertAge() {
+        var age12 = $("#date_of_birth").val();
+        var ageFormatted = formatDate(age12);
+        var age = getAge(ageFormatted);
+        if (age == -1) {
+          $("#age_from_date_birth").val("Select Date of Birth");
+        } else {
+          $("#age_from_date_birth").val(age);
+        }
+      }
+
+      $(function () {
+        $("#date_of_birth").Zebra_DatePicker({
+          format: "d-M-Y",
+          direction: -1,
+          onClose: function () {
+            alertAge();
+            document.getElementById("status").textContent = "closed";
+          },
+          onChange: function () {
+            document.getElementById("status").textContent = "changed";
+          },
+        });
+      });
+    </script>
+  </body>
+</html>

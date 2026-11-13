@@ -69,6 +69,9 @@ describe("library format normalization", () => {
     expect(normalizeLibraryFormat("DD/MM/YYYY", "pikaday")).toBe("dd/mm/yyyy");
     expect(normalizeLibraryFormat("D MMM YYYY", "pikaday")).toBe("d mmm yyyy");
     expect(normalizeLibraryFormat("YYYY-MM", "pikaday")).toBe("yyyy-mm");
+    expect(normalizeLibraryFormat("d-M-Y", "zebra-datepicker")).toBe("dd-mmm-yyyy");
+    expect(normalizeLibraryFormat("j F y", "zebra-datepicker")).toBe("d mmmm yy");
+    expect(normalizeLibraryFormat("n/j/Y", "zebra-datepicker")).toBe("m/d/yyyy");
   });
 });
 

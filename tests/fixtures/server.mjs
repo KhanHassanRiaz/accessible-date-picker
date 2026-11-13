@@ -25,6 +25,8 @@ const vendor = new Map([
   ["/vendor/flatpickr.css", "node_modules/flatpickr/dist/flatpickr.min.css"],
   ["/vendor/pikaday.js", "node_modules/pikaday/pikaday.js"],
   ["/vendor/pikaday.css", "tests/fixtures/vendor/pikaday.css"],
+  ["/vendor/zebra_datepicker.js", "tests/fixtures/vendor/zebra_datepicker.js"],
+  ["/vendor/zebra.css", "tests/fixtures/vendor/zebra.css"],
   ["/vendor/react.js", "node_modules/react/umd/react.production.min.js"],
   ["/vendor/react-dom.js", "node_modules/react-dom/umd/react-dom.production.min.js"],
 ]);

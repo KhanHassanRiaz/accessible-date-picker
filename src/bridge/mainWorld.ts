@@ -15,6 +15,13 @@ interface PikadayLike {
   };
 }
 
+interface ZebraDatePickerLike {
+  settings?: { format?: string; always_visible?: boolean };
+  set_date?: (value: string) => void;
+  show?: () => void;
+  hide?: () => void;
+}
+
 interface JQueryLike {
   (element: Element): JQueryElementLike;
   ui?: { version?: string };
@@ -165,6 +172,62 @@ export function mainWorldLibraryAdapter(
     return output;
   }
 
+  function formatZebraDate(value: Date, pattern: string): string {
+    const day = value.getDate();
+    const month = value.getMonth() + 1;
+    const year = value.getFullYear();
+    const monthLong = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ][month - 1];
+    let output = "";
+    let index = 0;
+    while (index < pattern.length) {
+      const character = pattern[index] ?? "";
+      switch (character) {
+        case "d":
+          output += String(day).padStart(2, "0");
+          break;
+        case "j":
+          output += String(day);
+          break;
+        case "m":
+          output += String(month).padStart(2, "0");
+          break;
+        case "n":
+          output += String(month);
+          break;
+        case "M":
+          output += (monthLong ?? "").slice(0, 3);
+          break;
+        case "F":
+          output += monthLong ?? "";
+          break;
+        case "Y":
+          output += String(year).padStart(4, "0");
+          break;
+        case "y":
+          output += String(year % 100).padStart(2, "0");
+          break;
+        default:
+          output += character;
+          break;
+      }
+      index += 1;
+    }
+    return output;
+  }
+
   try {
     if (flatpickrInstance && typeof flatpickrInstance.setDate === "function") {
       const library: DateLibrary = "flatpickr";
@@ -182,6 +245,7 @@ export function mainWorldLibraryAdapter(
       let handled = false;
       if (jq && typeof jq === "function") {
         const wrapped = jq(element);
+        const zebraInstance = wrapped.data?.("Zebra_DatePicker") as ZebraDatePickerLike | undefined;
         const instance = wrapped.data?.("datepicker") as
           | {
               settings?: { dateFormat?: string };
@@ -190,7 +254,32 @@ export function mainWorldLibraryAdapter(
               update?: (value: Date | string) => void;
             }
           | undefined;
-        if (instance) {
+        if (zebraInstance && typeof zebraInstance.set_date === "function") {
+          const pattern = zebraInstance.settings?.format ?? "Y-m-d";
+          info = {
+            name: "zebra-datepicker",
+            version: null,
+            format: pattern,
+            supported: true,
+            value: input.value,
+          };
+          if (mode === "set") {
+            zebraInstance.set_date(formatZebraDate(date, pattern));
+            input.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+            // Zebra runs the site's onChange while rendering a view and its
+            // onClose when the calendar hides. Some sites, including the
+            // Punjab Jobs profile form, calculate dependent fields only in
+            // onClose, so a plain value write would leave those fields stale.
+            try {
+              zebraInstance.show?.();
+            } catch {
+              // Rendering is best effort; hiding below still fires onClose.
+            }
+            zebraInstance.hide?.();
+          }
+          handled = true;
+        } else if (instance) {
           const isJqueryUi = Boolean(instance.settings);
           const isBootstrap =
             typeof instance.format === "string" || typeof instance.update === "function";

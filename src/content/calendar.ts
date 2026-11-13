@@ -58,6 +58,7 @@ const HEADER_SELECTORS = [
   ".ui-datepicker-title",
   ".flatpickr-current-month",
   ".pika-label",
+  ".Zebra_DatePicker .dp_caption",
   "[class*='calendar-title' i]",
   "[class*='calendar_title' i]",
   "[class*='picker-title' i]",
@@ -515,7 +516,7 @@ function findNav(root: Element, direction: "prev" | "next"): Element | null {
     let score = 0;
     if (direction === "prev") {
       if (
-        /ui-datepicker-prev|flatpickr-prev-month|pika-prev|ajax__calendar_prev|(^|\s)prev(\s|$)/i.test(
+        /ui-datepicker-prev|flatpickr-prev-month|pika-prev|ajax__calendar_prev|dp_previous|(^|\s)prev(\s|$)/i.test(
           hints,
         )
       ) {
@@ -525,7 +526,7 @@ function findNav(root: Element, direction: "prev" | "next"): Element | null {
       if (/^[«‹<←◀]$/.test(text)) score += 30;
     } else {
       if (
-        /ui-datepicker-next|flatpickr-next-month|pika-next|ajax__calendar_next|(^|\s)next(\s|$)/i.test(
+        /ui-datepicker-next|flatpickr-next-month|pika-next|ajax__calendar_next|dp_next|(^|\s)next(\s|$)/i.test(
           hints,
         )
       ) {

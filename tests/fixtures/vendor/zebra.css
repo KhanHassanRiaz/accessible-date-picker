@@ -1,0 +1,70 @@
+/* Minimal subset of the Zebra DatePicker stylesheet used by the fixture. */
+.Zebra_DatePicker {
+  position: absolute;
+  background: #373737;
+  border: 3px solid #373737;
+  z-index: 1200;
+  top: 0;
+  font-family: sans-serif;
+  font-size: 13px;
+}
+.Zebra_DatePicker table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: auto;
+}
+.Zebra_DatePicker td,
+.Zebra_DatePicker th {
+  text-align: center;
+  padding: 5px 0;
+}
+.Zebra_DatePicker td {
+  cursor: pointer;
+}
+.Zebra_DatePicker .dp_daypicker,
+.Zebra_DatePicker .dp_monthpicker,
+.Zebra_DatePicker .dp_yearpicker {
+  margin-top: 3px;
+}
+.Zebra_DatePicker .dp_daypicker td,
+.Zebra_DatePicker .dp_daypicker th,
+.Zebra_DatePicker .dp_monthpicker td,
+.Zebra_DatePicker .dp_yearpicker td {
+  width: 30px;
+  border: 1px solid #bbb;
+  background: #dedede;
+  color: #666;
+}
+.Zebra_DatePicker.dp_visible {
+  visibility: visible;
+  opacity: 1;
+}
+.Zebra_DatePicker.dp_hidden {
+  visibility: hidden;
+  opacity: 0;
+}
+.Zebra_DatePicker .dp_header td {
+  color: #e0e0e0;
+}
+.Zebra_DatePicker td.dp_weekend_disabled,
+.Zebra_DatePicker td.dp_not_in_month,
+.Zebra_DatePicker td.dp_not_in_month_selectable {
+  background: #ececec;
+  color: #ccc;
+  cursor: default;
+}
+.Zebra_DatePicker td.dp_disabled {
+  background: #ececec;
+  color: #ddd;
+  cursor: default;
+}
+button.Zebra_DatePicker_Icon {
+  display: block;
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  text-indent: -9000px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}

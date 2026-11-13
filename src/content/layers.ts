@@ -357,7 +357,8 @@ export function libraryName(value: string): DateLibrary {
     value === "jquery-ui" ||
     value === "bootstrap-datepicker" ||
     value === "flatpickr" ||
-    value === "pikaday"
+    value === "pikaday" ||
+    value === "zebra-datepicker"
   ) {
     return value;
   }

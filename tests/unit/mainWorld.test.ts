@@ -126,6 +126,60 @@ describe("MAIN world library adapter", () => {
     expect(Object.prototype.hasOwnProperty.call(options, "toString")).toBe(false);
   });
 
+  it("sets a Zebra date, fires change, and closes so onClose handlers run", () => {
+    const input = target();
+    const setDate = vi.fn((value: string) => {
+      input.value = value;
+    });
+    const show = vi.fn();
+    const hide = vi.fn();
+    const jq = vi.fn(() => ({
+      data: (name: string) =>
+        name === "Zebra_DatePicker"
+          ? { settings: { format: "d-M-Y" }, set_date: setDate, show, hide }
+          : undefined,
+    }));
+    (window as unknown as { jQuery: unknown }).jQuery = jq;
+    const changes: string[] = [];
+    input.addEventListener("change", () => changes.push("change"));
+
+    const result = mainWorldLibraryAdapter("token", 2000, 6, 10, "set");
+
+    expect(result.ok).toBe(true);
+    expect(result.info).toMatchObject({
+      name: "zebra-datepicker",
+      format: "d-M-Y",
+      supported: true,
+      value: "10-Jun-2000",
+    });
+    expect(setDate).toHaveBeenCalledWith("10-Jun-2000");
+    expect(changes).toContain("change");
+    expect(show).toHaveBeenCalledTimes(1);
+    expect(hide).toHaveBeenCalledTimes(1);
+  });
+
+  it("inspects a Zebra picker without changing the date", () => {
+    const input = target();
+    const setDate = vi.fn();
+    const show = vi.fn();
+    const hide = vi.fn();
+    const jq = vi.fn(() => ({
+      data: (name: string) =>
+        name === "Zebra_DatePicker"
+          ? { settings: { format: "d-M-Y" }, set_date: setDate, show, hide }
+          : undefined,
+    }));
+    (window as unknown as { jQuery: unknown }).jQuery = jq;
+
+    const result = mainWorldLibraryAdapter("token", 2000, 6, 10, "inspect");
+
+    expect(result.info).toMatchObject({ name: "zebra-datepicker", format: "d-M-Y" });
+    expect(input.value).toBe("");
+    expect(setDate).not.toHaveBeenCalled();
+    expect(show).not.toHaveBeenCalled();
+    expect(hide).not.toHaveBeenCalled();
+  });
+
   it("inspects without changing the date", () => {
     const input = target();
     const setDate = vi.fn();

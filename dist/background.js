@@ -104,6 +104,61 @@ function mainWorldLibraryAdapter(token, year, month, day, mode) {
     }
     return output;
   }
+  function formatZebraDate(value, pattern) {
+    const day2 = value.getDate();
+    const month2 = value.getMonth() + 1;
+    const year2 = value.getFullYear();
+    const monthLong = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ][month2 - 1];
+    let output = "";
+    let index = 0;
+    while (index < pattern.length) {
+      const character = pattern[index] ?? "";
+      switch (character) {
+        case "d":
+          output += String(day2).padStart(2, "0");
+          break;
+        case "j":
+          output += String(day2);
+          break;
+        case "m":
+          output += String(month2).padStart(2, "0");
+          break;
+        case "n":
+          output += String(month2);
+          break;
+        case "M":
+          output += (monthLong ?? "").slice(0, 3);
+          break;
+        case "F":
+          output += monthLong ?? "";
+          break;
+        case "Y":
+          output += String(year2).padStart(4, "0");
+          break;
+        case "y":
+          output += String(year2 % 100).padStart(2, "0");
+          break;
+        default:
+          output += character;
+          break;
+      }
+      index += 1;
+    }
+    return output;
+  }
   try {
     if (flatpickrInstance && typeof flatpickrInstance.setDate === "function") {
       const library = "flatpickr";
@@ -121,8 +176,29 @@ function mainWorldLibraryAdapter(token, year, month, day, mode) {
       let handled = false;
       if (jq && typeof jq === "function") {
         const wrapped = jq(element);
+        const zebraInstance = wrapped.data?.("Zebra_DatePicker");
         const instance = wrapped.data?.("datepicker");
-        if (instance) {
+        if (zebraInstance && typeof zebraInstance.set_date === "function") {
+          const pattern = zebraInstance.settings?.format ?? "Y-m-d";
+          info = {
+            name: "zebra-datepicker",
+            version: null,
+            format: pattern,
+            supported: true,
+            value: input.value
+          };
+          if (mode === "set") {
+            zebraInstance.set_date(formatZebraDate(date, pattern));
+            input.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+            try {
+              zebraInstance.show?.();
+            } catch {
+            }
+            zebraInstance.hide?.();
+          }
+          handled = true;
+        } else if (instance) {
           const isJqueryUi = Boolean(instance.settings);
           const isBootstrap = typeof instance.format === "string" || typeof instance.update === "function";
           if (isJqueryUi) {
@@ -295,7 +371,7 @@ var STRINGS = {
     ancestors: "Nearest ancestors",
     calendar: "Open calendar HTML",
     libraries: "Detected libraries",
-    steps: "Driver steps",
+    steps: "Steps",
     result: "Result",
     none: "None",
     unavailable: "Not available",

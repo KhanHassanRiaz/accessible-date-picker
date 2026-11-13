@@ -64,7 +64,7 @@
       ancestors: "Nearest ancestors",
       calendar: "Open calendar HTML",
       libraries: "Detected libraries",
-      steps: "Driver steps",
+      steps: "Steps",
       result: "Result",
       none: "None",
       unavailable: "Not available",

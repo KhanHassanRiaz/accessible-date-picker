@@ -26,6 +26,11 @@
   var monthsView = calendar.querySelector(".ajax__calendar_months");
   var yearsView = calendar.querySelector(".ajax__calendar_years");
   var todayButton = calendar.querySelector(".ajax__calendar_today");
+  var animationDuration = 250;
+  var viewHeight = 139;
+  var viewOrder = { days: 0, months: 1, years: 2 };
+  var animating = false;
+  var animationTimer = null;
 
   var params = new URLSearchParams(window.location.search);
   var min = parseIsoDay(params.get("min")) || new Date(1900, 0, 1);
@@ -91,8 +96,30 @@
     hide();
   }
 
-  function viewTop(active) {
-    return active ? "0px" : "139px";
+  function viewFor(name) {
+    if (name === "days") return daysView;
+    if (name === "months") return monthsView;
+    return yearsView;
+  }
+
+  function stopAnimation() {
+    if (animationTimer !== null) {
+      window.clearInterval(animationTimer);
+      animationTimer = null;
+    }
+    animating = false;
+  }
+
+  function parkInactiveViews(activeNames) {
+    ["days", "months", "years"].forEach(function (name) {
+      if (activeNames.indexOf(name) === -1) viewFor(name).style.top = viewHeight + "px";
+    });
+  }
+
+  function setRestingPositions() {
+    ["days", "months", "years"].forEach(function (name) {
+      viewFor(name).style.top = (name === mode ? 0 : viewHeight) + "px";
+    });
   }
 
   function renderDays() {
@@ -137,6 +164,7 @@
         if (inRange(date) && date.getMonth() === month) {
           td.addEventListener("click", function (event) {
             event.preventDefault();
+            if (animating) return;
             var chosen = event.currentTarget.querySelector(".ajax__calendar_day");
             var chosenDate = parseLongDate(chosen && chosen.title);
             if (chosenDate && inRange(chosenDate)) writeDate(chosenDate);
@@ -174,12 +202,15 @@
         td.append(cell);
         td.addEventListener("click", function (event) {
           event.preventDefault();
+          if (animating) return;
           var chosen = Number(
             event.currentTarget.querySelector(".ajax__calendar_month").dataset.month,
           );
           visibleDate = new Date(visibleDate.getFullYear(), chosen - 1, 1);
+          var previousMode = mode;
           mode = "days";
-          render();
+          renderContent();
+          animateViewSwitch(previousMode, "days");
         });
         row.append(td);
       }
@@ -207,12 +238,15 @@
         td.append(cell);
         td.addEventListener("click", function (event) {
           event.preventDefault();
+          if (animating) return;
           var chosen = Number(
             event.currentTarget.querySelector(".ajax__calendar_year").dataset.year,
           );
           visibleDate = new Date(chosen, visibleDate.getMonth(), 1);
+          var previousMode = mode;
           mode = "months";
-          render();
+          renderContent();
+          animateViewSwitch(previousMode, "months");
         });
         row.append(td);
       }
@@ -222,7 +256,7 @@
     yearsView.append(table);
   }
 
-  function render() {
+  function renderContent() {
     renderDays();
     renderMonths();
     renderYears();
@@ -235,19 +269,65 @@
       var first = Math.floor(year / 10) * 10;
       title.textContent = first + "-" + (first + 9);
     }
-    daysView.style.top = viewTop(mode === "days");
-    monthsView.style.top = viewTop(mode === "months");
-    yearsView.style.top = viewTop(mode === "years");
+  }
+
+  function animateViewSwitch(oldMode, newMode) {
+    stopAnimation();
+    var down = viewOrder[newMode] > viewOrder[oldMode];
+    var oldView = viewFor(oldMode);
+    var newView = viewFor(newMode);
+    parkInactiveViews([oldMode, newMode]);
+    oldView.style.top = "0px";
+    newView.style.top = (down ? -viewHeight : viewHeight) + "px";
+    var start = performance.now();
+    animating = true;
+    animationTimer = window.setInterval(function () {
+      var progress = Math.min(1, (performance.now() - start) / animationDuration);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      if (down) {
+        oldView.style.top = eased * viewHeight + "px";
+        newView.style.top = -viewHeight + eased * viewHeight + "px";
+      } else {
+        oldView.style.top = -eased * viewHeight + "px";
+        newView.style.top = viewHeight - eased * viewHeight + "px";
+      }
+      if (progress >= 1) {
+        stopAnimation();
+        oldView.style.top = (down ? viewHeight : -viewHeight) + "px";
+        newView.style.top = "0px";
+      }
+    }, 16);
+  }
+
+  function animateRefresh() {
+    stopAnimation();
+    parkInactiveViews([mode]);
+    var activeView = viewFor(mode);
+    activeView.style.top = viewHeight + "px";
+    var start = performance.now();
+    animating = true;
+    animationTimer = window.setInterval(function () {
+      var progress = Math.min(1, (performance.now() - start) / animationDuration);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      activeView.style.top = viewHeight - eased * viewHeight + "px";
+      if (progress >= 1) {
+        stopAnimation();
+        activeView.style.top = "0px";
+      }
+    }, 16);
   }
 
   function show() {
+    stopAnimation();
     if (selectedDate) visibleDate = cloneDate(selectedDate);
     mode = "days";
-    render();
+    renderContent();
+    setRestingPositions();
     calendar.hidden = false;
   }
 
   function hide() {
+    stopAnimation();
     calendar.hidden = true;
   }
 
@@ -262,37 +342,47 @@
 
   title.addEventListener("click", function (event) {
     event.preventDefault();
-    if (mode === "days") mode = "months";
-    else if (mode === "months") mode = "years";
-    render();
+    if (animating) return;
+    var nextMode = mode === "days" ? "months" : "years";
+    if (nextMode === mode) return;
+    var previousMode = mode;
+    mode = nextMode;
+    renderContent();
+    animateViewSwitch(previousMode, nextMode);
   });
 
   prev.addEventListener("click", function (event) {
     event.preventDefault();
+    if (animating) return;
     if (mode === "days")
       visibleDate = new Date(visibleDate.getFullYear(), visibleDate.getMonth() - 1, 1);
     else if (mode === "months") visibleDate = new Date(visibleDate.getFullYear() - 1, 0, 1);
     else visibleDate = new Date(visibleDate.getFullYear() - 10, 0, 1);
-    render();
+    renderContent();
+    animateRefresh();
   });
 
   next.addEventListener("click", function (event) {
     event.preventDefault();
+    if (animating) return;
     if (mode === "days")
       visibleDate = new Date(visibleDate.getFullYear(), visibleDate.getMonth() + 1, 1);
     else if (mode === "months") visibleDate = new Date(visibleDate.getFullYear() + 1, 0, 1);
     else visibleDate = new Date(visibleDate.getFullYear() + 10, 0, 1);
-    render();
+    renderContent();
+    animateRefresh();
   });
 
   if (todayButton) {
     todayButton.addEventListener("click", function (event) {
       event.preventDefault();
+      if (animating) return;
       var today = new Date();
       if (inRange(today)) {
         visibleDate = cloneDate(today);
         mode = "days";
-        render();
+        renderContent();
+        animateRefresh();
       }
     });
   }
@@ -308,6 +398,7 @@
     hide();
   });
 
-  render();
+  renderContent();
+  setRestingPositions();
   console.log("fixture calendar ready on " + isoDay(visibleDate));
 })();

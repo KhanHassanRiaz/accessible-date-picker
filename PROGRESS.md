@@ -1,6 +1,6 @@
 # Progress
 
-Last updated: 2026-11-10
+Last updated: 2026-11-13
 
 ## Status
 
@@ -8,12 +8,12 @@ The extension is feature-complete for the planned scope. A prebuilt production e
 
 - TypeScript check: pass (`npx tsc --noEmit`).
 - ESLint: pass (`npm run lint`).
-- Unit tests: 114 passing in 8 files (`npm run test:unit`).
-- End-to-end tests: 28 passing (`npm run test:e2e`).
+- Unit tests: 116 passing in 8 files (`npm run test:unit`).
+- End-to-end tests: 31 passing (`npm run test:e2e`).
 - Prettier check: pass for source, tests, scripts, and documentation (`npm run format:check`).
 - Manual NVDA testing: not yet done. See `NVDA_TEST_CHECKLIST.md`.
 
-The end-to-end run uses Playwright headless Chromium, the test build of the extension, and local fixtures. It does not prove how NVDA, JAWS, or VoiceOver will speak the dialog, and it does not prove behavior on real third-party sites. The ASP.NET AJAX fix is proven against a local CalendarExtender-style fixture, not against the Bank of Punjab form itself.
+The end-to-end run uses Playwright headless Chromium, the test build of the extension, and local fixtures. It does not prove how NVDA, JAWS, or VoiceOver will speak the dialog, and it does not prove behavior on real third-party sites. The ASP.NET AJAX fix is proven against a local CalendarExtender-style fixture that animates its views and ignores clicks while animating, not against the Bank of Punjab form itself. The Zebra DatePicker fix is proven against the actual Zebra script served by the Punjab Jobs site, vendored into a local fixture, not yet against the live profile form.
 
 ## Completed phases
 
@@ -46,7 +46,7 @@ The end-to-end run uses Playwright headless Chromium, the test build of the exte
 - Restricted-page detection and `ERR` badge.
 - Native input layer.
 - Site calendar driver with day, month, year, and decade views.
-- Main-world library adapter for jQuery UI, bootstrap-datepicker, flatpickr, and Pikaday.
+- Main-world library adapter for jQuery UI, bootstrap-datepicker, flatpickr, Pikaday, and Zebra DatePicker.
 - Direct write with format detection and refusal.
 - Learned-format storage keyed by origin and field key.
 
@@ -58,8 +58,8 @@ The end-to-end run uses Playwright headless Chromium, the test build of the exte
 
 ### Phase 6: Tests and fixtures
 
-- 114 unit tests across dates, formats, verification, storage, field detection, labels, calendar analysis, clipped CalendarExtender views, candidate rejection, and the main-world adapter.
-- 28 end-to-end tests covering native inputs, dialog behavior, Enter to apply from a select, the calendar driver, an ASP.NET AJAX CalendarExtender-style popup with a distant year and a disabled day, direct write, ambiguity refusal, focus isolation, month and year calendars, React, unresponsive calendars, read-only fields, open shadow roots, same-origin and cross-origin iframes, diagnostics, options, and all four library adapters.
+- 116 unit tests across dates, formats, verification, storage, field detection, labels, calendar analysis, clipped CalendarExtender views, candidate rejection, and the main-world adapter.
+- 31 end-to-end tests covering native inputs, dialog behavior, Enter to apply from a select, the calendar driver, an animated ASP.NET AJAX CalendarExtender-style popup with a distant year and a disabled day, direct write, ambiguity refusal, focus isolation, month and year calendars, React, unresponsive calendars, read-only fields, open shadow roots, same-origin and cross-origin iframes, compact diagnostics with log clearing, options, Zebra DatePicker with a calculated age field on both the driver and adapter paths, and all four other library adapters.
 - axe accessibility check on the dialog.
 
 ### Phase 7: Documentation and packaging
@@ -82,12 +82,19 @@ The end-to-end run uses Playwright headless Chromium, the test build of the exte
 - Fixed the ASP.NET AJAX CalendarExtender path: inactive views that sit below a clipped body are ignored, unhinted forms and oversized layout containers are no longer selected as calendars, the month header opens a year grid for distant years, and closing only touches the calendar the driver opened.
 - Treated equal day and month numbers such as `2/2/2026` as unambiguous, because both day-first and month-first readings give the same date. Other ambiguous numeric values are still refused.
 - Added a local CalendarExtender-style fixture with a readonly field, image trigger, stacked clipped views, out-of-range days, and a distant-year end-to-end test.
+- Fixed the animated CalendarExtender failure: the driver now waits for DOM mutations and running animations to settle, and requires stable view readings before reading or clicking. The fixture now animates view changes and ignores clicks during animation, matching the real widget.
+- Made the diagnostic report compact: one driver summary replaces duplicate per-step lines, and collected steps are cleared after each copy and when the dialog is dismissed.
+- Recognized Zebra DatePicker's `.dp_caption` header and `dp_previous` and `dp_next` controls, so the driver opens the year grid and reaches a distant year instead of stepping month by month until it times out.
+- Added a Zebra DatePicker main-world adapter that calls `set_date`, dispatches input and change, then shows and hides the widget so the site's `onChange` and `onClose` handlers run.
+- Added `zebra-datepicker` format token support: `d` and `j` for padded and unpadded day, `m` and `n` for padded and unpadded month, `M` and `F` for short and long month names, and `y` and `Y` for two-digit and four-digit years.
+- Added two Zebra end-to-end fixtures using the Zebra script served by the Punjab Jobs site, one for the driver path and one with a hidden popup for the adapter path. Both check that the site's calculated age field updates.
 
 ## Remaining work
 
 - Re-test the extension on the real Bank of Punjab form after loading the new production build.
+- Re-test the extension on the real Punjab Jobs profile form (`jobs.punjab.gov.pk/new_profile_builder/my_account`) and confirm the Age field updates from the live Zebra widget.
 - Run the manual NVDA checklist on Windows with Chrome.
-- Try the extension on real websites with jQuery UI, bootstrap-datepicker, flatpickr, and Pikaday calendars.
+- Try the extension on real websites with jQuery UI, bootstrap-datepicker, flatpickr, Pikaday, and Zebra DatePicker calendars.
 - Try high-contrast and forced-colors display modes manually.
 - Confirm shortcut assignment and conflicts in a normal Chrome profile.
 - Rebuild the production extension and zip after any further source change.
@@ -100,5 +107,5 @@ The end-to-end run uses Playwright headless Chromium, the test build of the exte
 - Ambiguous numeric dates are refused.
 - Month names are English only.
 - A site can still reject or rewrite a value; the extension reports the real result.
-- The calendar driver stops after ten seconds or forty steps.
+- The calendar driver stops after twenty seconds or forty steps.
 - Automated tests do not prove screen-reader speech quality.

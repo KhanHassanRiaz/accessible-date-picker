@@ -10,7 +10,7 @@ import {
 import { MONTH_ABBREVIATIONS, MONTH_NAMES } from "../strings.js";
 
 export type DateLibrary =
-  "jquery-ui" | "bootstrap-datepicker" | "flatpickr" | "pikaday" | "unknown";
+  "jquery-ui" | "bootstrap-datepicker" | "flatpickr" | "pikaday" | "zebra-datepicker" | "unknown";
 
 export interface FormatDetectionClues {
   learned?: string | null;
@@ -191,6 +191,15 @@ function convertLibraryTokens(raw: string, library: DateLibrary): string | null 
       else if (token === "MMMM") canonical = "mmmm";
       else if (token === "YY") canonical = "yy";
       else if (token === "YYYY") canonical = "yyyy";
+    } else if (library === "zebra-datepicker") {
+      if (token === "d") canonical = "dd";
+      else if (token === "j") canonical = "d";
+      else if (token === "m") canonical = "mm";
+      else if (token === "n") canonical = "m";
+      else if (token === "M") canonical = "mmm";
+      else if (token === "F") canonical = "mmmm";
+      else if (token === "y") canonical = "yy";
+      else if (token === "Y") canonical = "yyyy";
     } else {
       canonical = null;
     }

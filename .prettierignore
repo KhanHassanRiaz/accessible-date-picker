@@ -7,3 +7,4 @@ blob-report/
 coverage/
 *.zip
 package-lock.json
+tests/fixtures/vendor/zebra_datepicker.js

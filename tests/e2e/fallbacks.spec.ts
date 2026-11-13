@@ -215,6 +215,40 @@ test.describe("calendar driver and direct write", () => {
     expect(text).not.toContain("custom-calendar.js");
     expect(text).not.toContain("data-adp-target");
   });
+
+  test("copies a compact report and clears the collected steps after each copy", async ({
+    page,
+    worker,
+  }) => {
+    await page.goto(`${BASE_URL}/stuck.html`);
+    await openPicker(worker, page, "#booking");
+
+    await chooseDate(page, { year: 2026, month: 5, day: 20 });
+    await applyDialog(page);
+    await expect(liveRegion(page, "assertive")).toHaveText(
+      "The calendar did not respond, the date was not changed.",
+      { timeout: 20_000 },
+    );
+
+    const copyButton = page.getByRole("button", { name: "Copy diagnostic report" });
+    await copyButton.click();
+    await expect(liveRegion(page, "assertive")).toHaveText("Report copied.");
+
+    const first = await page.evaluate(() => navigator.clipboard.readText());
+    expect(first).toContain("Steps:");
+    expect(first).toContain("driver: stuck");
+    expect(first).not.toMatch(/driver #\d+/);
+    expect(first).not.toContain("driver go to prev month");
+    const driverLines = first.split("\n").filter((line) => /^\d+ ms driver:/.test(line));
+    expect(driverLines).toHaveLength(1);
+
+    await copyButton.click();
+    await expect(liveRegion(page, "assertive")).toHaveText("Report copied.");
+
+    const second = await page.evaluate(() => navigator.clipboard.readText());
+    expect(second).toMatch(/Steps:\s+None/);
+    expect(second).not.toContain("driver:");
+  });
 });
 
 test.describe("options page", () => {

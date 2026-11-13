@@ -194,9 +194,13 @@ export class ContentFlow {
     const driver = new CalendarDriver(this.field, target);
     const result = await driver.run();
     this.driverResult = result;
-    for (const entry of result.log) {
-      this.log(`driver ${entry.action}`, `${entry.elapsedMs} ms: ${entry.detail}`);
-    }
+    const lastStep = result.log[result.log.length - 1];
+    this.log(
+      "driver",
+      `${result.status} (${result.mode}), ${result.log.length} steps, ${
+        lastStep?.elapsedMs ?? 0
+      } ms${lastStep ? `, last step: ${lastStep.action}` : ""}; ${result.detail}`,
+    );
     if (result.status === "not-allowed") {
       this.failInDialog(STRINGS.notAllowed);
       return;
@@ -312,6 +316,7 @@ export class ContentFlow {
       this.lastResult = STRINGS.siteRejected;
       this.completed = true;
       activeFlow = null;
+      this.clearCollectedLogs();
       announce(STRINGS.siteRejected, "assertive");
       scheduleAnnouncementCleanup();
       return false;
@@ -323,6 +328,7 @@ export class ContentFlow {
     this.lastResult = message;
     this.completed = true;
     activeFlow = null;
+    this.clearCollectedLogs();
     announce(message, "assertive");
     scheduleAnnouncementCleanup();
     return true;
@@ -364,6 +370,7 @@ export class ContentFlow {
     this.dialogClosed = true;
     focusWithoutScroll(this.field);
     this.lastResult = message;
+    this.clearCollectedLogs();
     announce(message, "assertive");
     scheduleAnnouncementCleanup();
     activeFlow = null;
@@ -374,6 +381,7 @@ export class ContentFlow {
     this.dialog?.close();
     this.dialogClosed = true;
     focusWithoutScroll(this.field);
+    this.clearCollectedLogs();
     announce(STRINGS.cancelled, "assertive");
     scheduleAnnouncementCleanup();
     activeFlow = null;
@@ -381,17 +389,22 @@ export class ContentFlow {
   }
 
   private async copyDiagnostics(): Promise<void> {
-    this.log("diagnostics", "copy requested");
     const inspect = await inspectLibraries(this.field);
     if (inspect) this.libraryInfo = inspect;
     const report = this.buildDiagnosticReport();
     const copied = await copyTextToClipboard(report);
+    this.clearCollectedLogs();
     if (copied) {
       announce(STRINGS.reportCopied, "assertive");
     } else {
       announce(STRINGS.reportCopyFailed, "assertive");
       this.dialog?.focusFirst();
     }
+  }
+
+  private clearCollectedLogs(): void {
+    this.flowLog.length = 0;
+    if (this.driverResult) this.driverResult.log.length = 0;
   }
 
   private buildDiagnosticReport(): string {
@@ -414,12 +427,9 @@ export class ContentFlow {
       ? sanitizedOuterHtml(openCalendar, true, 20_480)
       : STRINGS.diagnostics.none;
     const libraries = describeLibrary(this.libraryInfo);
-    const stepLines = [
-      ...this.flowLog.map((entry) => `${entry.elapsedMs} ms ${entry.action}: ${entry.detail}`),
-      ...(this.driverResult?.log ?? []).map(
-        (entry) => `${entry.elapsedMs} ms driver #${entry.step} ${entry.action}: ${entry.detail}`,
-      ),
-    ];
+    const stepLines = this.flowLog.map(
+      (entry) => `${entry.elapsedMs} ms ${entry.action}: ${entry.detail}`,
+    );
     return [
       STRINGS.diagnostics.title,
       "",

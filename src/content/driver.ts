@@ -56,6 +56,15 @@ class DriverStop extends Error {
   }
 }
 
+// Calendar widgets commonly animate view changes for 200 to 300 ms and ignore
+// input while they animate. The budget is larger than the old ten seconds so
+// the driver can wait for those animations without running out of time.
+const TIME_BUDGET_MS = 20_000;
+const STEP_LIMIT = 40;
+const SETTLE_FIRST_MUTATION_MS = 500;
+const SETTLE_QUIET_MS = 150;
+const SETTLE_MAX_MS = 1_000;
+
 function sleep(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
@@ -93,11 +102,10 @@ export class CalendarDriver {
         return this.result("not-found", "no calendar popup appeared", null);
       }
       this.lastCalendar = root;
-      let view = analyzeCalendar(root);
+      let view = await this.readStableView();
       if (!view) {
-        await sleep(120);
         root = this.refreshCalendar() ?? root;
-        view = analyzeCalendar(root);
+        view = await this.readStableView();
       }
       if (!view) {
         return this.result("failed", "the calendar view could not be recognized", root);
@@ -164,11 +172,14 @@ export class CalendarDriver {
   }
 
   private checkBudget(): void {
-    if (performance.now() - this.startedAt > 10_000) {
-      throw new DriverStop("stuck", "the 10 second calendar time budget was exceeded");
+    if (performance.now() - this.startedAt > TIME_BUDGET_MS) {
+      throw new DriverStop(
+        "stuck",
+        `the ${TIME_BUDGET_MS / 1_000} second calendar time budget was exceeded`,
+      );
     }
-    if (this.steps >= 40) {
-      throw new DriverStop("stuck", "the 40 step calendar limit was reached");
+    if (this.steps >= STEP_LIMIT) {
+      throw new DriverStop("stuck", `the ${STEP_LIMIT} step calendar limit was reached`);
     }
   }
 
@@ -176,16 +187,18 @@ export class CalendarDriver {
     const visibleBefore = snapshotVisibleElements();
     const existing = findCalendarCandidate(this.field);
     if (existing && this.recognizeCalendar(existing)) {
+      await this.waitForActionSettled();
       this.logStep("calendar", "found an already open calendar");
-      return existing;
+      return this.refreshCalendar() ?? existing;
     }
 
     focusWithoutScroll(this.field);
-    await sleep(120);
+    await this.waitForActionSettled();
     const afterFocus = findCalendarCandidate(this.field);
     if (afterFocus && this.recognizeCalendar(afterFocus)) {
+      await this.waitForActionSettled();
       this.logStep("calendar", "calendar opened when the field received focus");
-      return afterFocus;
+      return this.refreshCalendar() ?? afterFocus;
     }
 
     if (this.field.disabled) throw new DriverStop("not-allowed", "the field is disabled");
@@ -198,7 +211,7 @@ export class CalendarDriver {
     const buttons = this.findCalendarButtons();
     for (const button of buttons.slice(0, 4)) {
       if (!button.isConnected || !isVisible(button) || isControlDisabled(button)) continue;
-      if (this.steps >= 40 || performance.now() - this.startedAt > 10_000) break;
+      if (this.steps >= STEP_LIMIT || performance.now() - this.startedAt > TIME_BUDGET_MS) break;
       const snapshot = snapshotVisibleElements();
       this.steps += 1;
       this.logStep("click calendar button", shortText(button, 80) || "icon button");
@@ -223,12 +236,68 @@ export class CalendarDriver {
       const candidate =
         findCalendarCandidate(this.field, beforeVisible) ?? findCalendarCandidate(this.field);
       if (candidate && this.recognizeCalendar(candidate)) {
-        this.logStep("calendar", "calendar popup detected");
-        return candidate;
+        await this.waitForActionSettled();
+        const settled = this.refreshCalendar() ?? candidate;
+        if (this.recognizeCalendar(settled)) {
+          this.logStep("calendar", "calendar popup detected");
+          return settled;
+        }
       }
       await waitForMutationOrTimeout(Math.min(80, Math.max(10, deadline - performance.now())));
     }
     return null;
+  }
+
+  /**
+   * Waits until the page has stopped changing after an action. Calendar
+   * widgets often animate for a quarter of a second and ignore clicks during
+   * that time, so reading or clicking too early either sees a half-moved view
+   * or has the click discarded.
+   */
+  private async waitForActionSettled(): Promise<void> {
+    const firstMutation = await waitForMutationOrTimeout(SETTLE_FIRST_MUTATION_MS);
+    if (!firstMutation) {
+      await this.waitForRunningAnimations(300);
+      return;
+    }
+    const deadline = performance.now() + SETTLE_MAX_MS;
+    while (performance.now() < deadline) {
+      const remaining = Math.max(1, deadline - performance.now());
+      const mutated = await waitForMutationOrTimeout(Math.min(SETTLE_QUIET_MS, remaining));
+      if (!mutated) break;
+    }
+    await this.waitForRunningAnimations(300);
+  }
+
+  private async waitForRunningAnimations(timeoutMs: number): Promise<void> {
+    const root = this.lastCalendar;
+    if (!root) return;
+    const deadline = performance.now() + timeoutMs;
+    while (performance.now() < deadline) {
+      let running = false;
+      try {
+        running = root
+          .getAnimations({ subtree: true })
+          .some((animation) => animation.playState === "running");
+      } catch {
+        return;
+      }
+      if (!running) return;
+      await sleep(50);
+    }
+  }
+
+  private async readStableView(): Promise<CalendarView | null> {
+    let view = this.readView();
+    let previousSignature = view?.signature ?? null;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await sleep(70);
+      view = this.readView();
+      const signature = view?.signature ?? null;
+      if (signature === previousSignature) return view;
+      previousSignature = signature;
+    }
+    return view;
   }
 
   private findCalendarButtons(): Element[] {
@@ -293,24 +362,6 @@ export class CalendarDriver {
     return view;
   }
 
-  private async awaitChange(
-    beforeField: string,
-    beforeSignature: string | null,
-  ): Promise<CalendarView | null> {
-    await sleep(35);
-    const next = this.readView();
-    const changed =
-      next === null ||
-      this.field.value !== beforeField ||
-      (next.signature !== beforeSignature && beforeSignature !== null);
-    if (changed) {
-      this.noChangeStreak = 0;
-    } else {
-      this.noChangeStreak += 1;
-    }
-    return next;
-  }
-
   private async click(element: Element, action: string, allowNoChange = false): Promise<boolean> {
     this.checkBudget();
     if (!element.isConnected || !isVisible(element)) {
@@ -324,20 +375,25 @@ export class CalendarDriver {
     this.steps += 1;
     const clickStarted = performance.now();
     dispatchClickSequence(element);
-    await waitForMutationOrTimeout(400);
-    const next = await this.awaitChange(beforeField, beforeSignature);
+    await this.waitForActionSettled();
+    const next = await this.readStableView();
     this.logStep(
       action,
       `${Math.round(performance.now() - clickStarted)} ms, ${next?.kind ?? "closed"}`,
     );
+    const changed =
+      this.field.value !== beforeField ||
+      next === null ||
+      (beforeSignature !== null && next.signature !== beforeSignature);
+    if (changed) {
+      this.noChangeStreak = 0;
+    } else {
+      this.noChangeStreak += 1;
+    }
     if (!allowNoChange && this.noChangeStreak >= 2) {
       throw new DriverStop("stuck", `${action}: the calendar did not change`);
     }
-    return (
-      this.field.value !== beforeField ||
-      next === null ||
-      (beforeSignature !== null && next.signature !== beforeSignature)
-    );
+    return changed;
   }
 
   private async setControls(includeMonth: boolean): Promise<boolean> {
@@ -354,8 +410,8 @@ export class CalendarDriver {
         dispatchInputEvents(yearSelect);
         interacted = true;
         this.logStep("set year select", String(this.target.year));
-        await sleep(120);
-        root = this.readView()?.root ?? root;
+        await this.waitForActionSettled();
+        root = (await this.readStableView())?.root ?? root;
       }
     } else {
       const yearInput = findYearInput(root);
@@ -364,8 +420,8 @@ export class CalendarDriver {
         dispatchInputEvents(yearInput);
         interacted = true;
         this.logStep("set year input", String(this.target.year));
-        await sleep(120);
-        root = this.readView()?.root ?? root;
+        await this.waitForActionSettled();
+        root = (await this.readStableView())?.root ?? root;
       }
     }
 
@@ -378,8 +434,8 @@ export class CalendarDriver {
           dispatchInputEvents(monthSelect);
           interacted = true;
           this.logStep("set month select", String(this.target.month));
-          await sleep(150);
-          this.readView();
+          await this.waitForActionSettled();
+          await this.readStableView();
         }
       }
     }
@@ -411,11 +467,11 @@ export class CalendarDriver {
     this.steps += 1;
     const started = performance.now();
     dispatchClickSequence(cell.element);
-    await waitForMutationOrTimeout(400);
-    let next = await this.awaitChange(beforeField, beforeSignature);
+    await this.waitForActionSettled();
+    let next = await this.readStableView();
     if (next && this.field.value === beforeField && next.signature === beforeSignature) {
       await sleep(300);
-      next = this.readView();
+      next = await this.readStableView();
     }
     this.logStep("click day", `${Math.round(performance.now() - started)} ms`);
     if (next && this.field.value === beforeField && next.signature === beforeSignature) {
@@ -454,7 +510,7 @@ export class CalendarDriver {
             directTried = true;
             const interacted = await this.setControls(true);
             if (interacted) {
-              view = this.readView();
+              view = await this.readStableView();
               if (!view) {
                 this.mode = "month-year";
                 return;
@@ -472,7 +528,7 @@ export class CalendarDriver {
               const beforeSignature = view.signature;
               await this.click(view.header, "open month or year view", true);
               zoomAttempts += 1;
-              const next = this.readView();
+              const next = await this.readStableView();
               if (!next) {
                 throw new DriverStop("failed", "the calendar closed while opening the month view");
               }
@@ -496,7 +552,7 @@ export class CalendarDriver {
           if (view.year !== this.target.year) {
             const direct = await this.setControls(false);
             if (direct) {
-              view = this.readView();
+              view = await this.readStableView();
               if (!view) {
                 this.mode = "month-year";
                 return;
@@ -511,7 +567,7 @@ export class CalendarDriver {
               monthZoomTried = true;
               const beforeSignature = view.signature;
               await this.click(view.header, "open year view", true);
-              const zoomed = this.readView();
+              const zoomed = await this.readStableView();
               if (
                 zoomed &&
                 zoomed.signature !== beforeSignature &&
@@ -535,7 +591,7 @@ export class CalendarDriver {
           }
           const beforeField = this.field.value;
           await this.click(cell.element, "choose month");
-          const next = this.readView();
+          const next = await this.readStableView();
           if (!next) {
             this.mode = "month-year";
             return;
@@ -561,7 +617,7 @@ export class CalendarDriver {
               throw new DriverStop("not-allowed", "the requested year is disabled");
             }
             await this.click(yearCell.element, "choose year");
-            const next = this.readView();
+            const next = await this.readStableView();
             if (!next) {
               this.mode = "month-year";
               return;
@@ -580,7 +636,7 @@ export class CalendarDriver {
           );
           if (decade) {
             await this.click(decade.element, "choose decade");
-            const next = this.readView();
+            const next = await this.readStableView();
             if (!next) {
               this.mode = "month-year";
               return;
@@ -593,8 +649,8 @@ export class CalendarDriver {
         }
 
         case "unknown": {
-          await sleep(120);
-          const next = this.readView();
+          await this.waitForActionSettled();
+          const next = await this.readStableView();
           if (!next || next.kind === "unknown") {
             throw new DriverStop("failed", "the calendar view could not be recognized");
           }
@@ -617,7 +673,7 @@ export class CalendarDriver {
       throw new DriverStop("not-allowed", `the ${direction} month control is disabled`);
     }
     await this.click(control, `go to ${direction} month`);
-    const next = this.readView();
+    const next = await this.readStableView();
     if (!next) throw new DriverStop("failed", "the calendar closed while changing months");
     if (next.kind !== "day") return next;
     if (next.signature === view.signature) {
@@ -635,7 +691,7 @@ export class CalendarDriver {
       throw new DriverStop("not-allowed", `the ${direction} year control is disabled`);
     }
     await this.click(control, `go to ${direction} year`);
-    const next = this.readView();
+    const next = await this.readStableView();
     if (!next) throw new DriverStop("failed", "the calendar closed while changing years");
     return next;
   }
@@ -655,7 +711,7 @@ export class CalendarDriver {
       throw new DriverStop("not-allowed", `the ${direction} year control is disabled`);
     }
     await this.click(control, `go to ${direction} year page`);
-    const next = this.readView();
+    const next = await this.readStableView();
     if (!next) throw new DriverStop("failed", "the calendar closed while changing year pages");
     return next;
   }
@@ -675,7 +731,7 @@ export class CalendarDriver {
       throw new DriverStop("not-allowed", "the requested year is disabled");
     }
     await this.click(control, `go to ${direction} decade`);
-    const next = this.readView();
+    const next = await this.readStableView();
     if (!next) throw new DriverStop("failed", "the calendar closed while changing decades");
     return next;
   }
